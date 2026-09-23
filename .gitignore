@@ -1,0 +1,19 @@
+# The root repository contains canonical documentation only.
+# Everything is ignored unless explicitly listed below, including the two
+# independent application repositories, local tools, databases and secrets.
+/*
+!/.gitignore
+!/.gitattributes
+!/README.md
+!/AGENTS.md
+!/docs/
+/docs/*
+!/docs/BUSINESS_CONTEXT.md
+!/docs/BUSINESS_RULES.md
+!/docs/ARCHITECTURE.md
+!/docs/DATA_MODEL.md
+!/docs/STATE_MACHINES.md
+!/docs/COMPLIANCE_AND_FINANCE.md
+!/docs/INTEGRATIONS.md
+!/docs/TASKS.md
+!/docs/DECISIONS.md
