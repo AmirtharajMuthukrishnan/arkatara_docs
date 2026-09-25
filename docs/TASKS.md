@@ -1,12 +1,12 @@
 # Implementation backlog
 
-Status: TASK 1 AUTHORIZED; LATER TASKS REMAIN PLANNED\
-Recorded: 2026-09-19\
-Implementation status: **TASK 1 IN PROGRESS; TASKS 2–10 PLANNED / NOT STARTED.**
+Status: TASK 1 COMPLETE; TASK 2 AUTHORIZED\
+Updated: 2026-09-25\
+Implementation status: **TASK 2 DOMAIN FOUNDATION IMPLEMENTED AND LOCALLY VERIFIED; REVIEW/CI/MERGE PENDING. TASKS 3–10 PLANNED / NOT STARTED.**
 
-The owner approved the business context and invariants, approved the Next.js/React + Django/DRF + PostgreSQL stack, and authorized Task 1 implementation on 2026-09-19. This authorization does not extend to Tasks 2–10 or resolve any open business, CA or legal decision.
+The owner approved the business context and invariants, approved the Next.js/React + Django/DRF + PostgreSQL stack, and authorized Task 1 implementation on 2026-09-19. On 2026-09-24 the owner requested Task 2 after verifying Task 1. That verification passed; Task 2 is authorized. Tasks 3–10 and open business, CA and legal decisions require their own authority.
 
-On 2026-09-21, the owner reconfirmed **finish Task 1 only** and initially kept BD-14 pending. On 2026-09-23, the owner approved the separate documentation-only root repository, resolving BD-14 for local tracking. Remote setup/publication is separate. Task 2 remains unapproved and unstarted.
+On 2026-09-21, the owner reconfirmed **finish Task 1 only** and initially kept BD-14 pending. On 2026-09-23, the owner approved the separate documentation-only root repository, resolving BD-14. The owner subsequently published all three repositories. The 2026-09-24 Task 2 instruction supersedes the earlier Task 1-only limit; it does not resolve any commercial or external-review policy.
 
 This is the canonical shared backlog for both repositories. Consult [BUSINESS_CONTEXT.md](BUSINESS_CONTEXT.md), [BUSINESS_RULES.md](BUSINESS_RULES.md), [ARCHITECTURE.md](ARCHITECTURE.md), [DATA_MODEL.md](DATA_MODEL.md), [STATE_MACHINES.md](STATE_MACHINES.md), [COMPLIANCE_AND_FINANCE.md](COMPLIANCE_AND_FINANCE.md), [INTEGRATIONS.md](INTEGRATIONS.md), [DECISIONS.md](DECISIONS.md), and the applicable `AGENTS.md` before implementing any task. Do not maintain a duplicate backlog in either application repository.
 
@@ -21,7 +21,7 @@ This is the canonical shared backlog for both repositories. Consult [BUSINESS_CO
 - Tasks are a dependency-aware roadmap, not a requirement to postpone every later-named concern: secure configuration, permissions, integrity and audit foundations begin with Task 1; Task 10 deepens and verifies them. Add relevant event hooks when the underlying domain behaviour is implemented, then validate reporting in Task 10.
 - Task 7 creates selection, Purchase and PurchaseItem domain behaviour before Task 8 adds live gateway collection, complete billing and reconciliation. Task 6 introduces provider contracts and development fakes; actual payment integration belongs to Task 8 and messaging integration to Task 9. Fake payment or messaging success is never evidence of a real payment or a production-ready customer flow.
 - A live pilot before Task 8 has no approved collection/confirmation procedure (**BUSINESS DECISION BD-06**). Deferred integration does not imply cash, manually verified UPI, screenshots or permission to launch without trusted payment confirmation.
-- Source-control tracking follows **BUSINESS DECISION BD-14**, approved on 2026-09-23: a documentation-only root repository excludes the two separate application repositories and local tools/data. Keep the canonical copy under root `docs/`; do not merge application histories, introduce submodules or duplicate documents. Documentation remote setup/publication remains separate.
+- Source-control tracking follows **BUSINESS DECISION BD-14**, approved on 2026-09-23: a documentation-only root repository excludes the two separate application repositories and local tools/data. Keep the canonical copy under root `docs/`; do not merge application histories, introduce submodules or duplicate documents. Documentation publication was verified on 2026-09-24.
 - Provider choices, validation of the shared Razorpay QR/link flow and channel retry/fallback/OTP-resend/retention operations are **BUSINESS DECISION BD-15**. Customer-facing legal pages, privacy, consent, retention and applicable messaging/DLT obligations are **LEGAL REVIEW LR-04**. These gates apply wherever the corresponding work appears below, including Tasks 3, 4, 6, 7, 8, 9 and 10.
 
 ### Reconciliation against the approved business context
@@ -30,7 +30,7 @@ No direct business contradiction was identified. The roadmap makes hub inventory
 
 ## 1. Project foundation, architecture and business configuration
 
-**Status:** IN PROGRESS — AUTHORIZED 2026-09-19.
+**Status:** COMPLETE — VERIFIED 2026-09-24.
 
 **Progress recorded 2026-09-20:** The backend/frontend structures, module packages, environment settings, `/api/v1/`, foundational LegalEntity/configuration/audit models, lockfiles, formatting/linting/test tooling and CI definitions are implemented on `feature/task-1-foundation`. Local static checks and the frontend production build pass. PostgreSQL migration and database-backed test execution still require a running PostgreSQL 18 service or the first CI run; canonical-document source-control ownership remains BD-14. Task 1 is therefore not yet marked complete.
 
@@ -45,12 +45,14 @@ No direct business contradiction was identified. The roadmap makes hub inventory
 | 1.6: configurable rules | Four typed setting contracts, exact-scope lookup, immutable ORM revisions and missing/approval/conflict errors implemented. Admin creates draft proposals only; no activation/retirement workflow or production values are enabled. |
 | 1.8: auditability | Attributed, atomic Admin changes, durable staff identity, read-only audit Admin and PostgreSQL audit UPDATE/DELETE protection implemented and tested. |
 | Frontend foundation | API origin/path containment, structured request errors and recoverable page errors implemented and verified. |
-| 1.7: review and CI | Initial foundation PRs passed and merged. Follow-up fixes still require commits, pushes, PR review and green CI before merging. |
-| 1.7: canonical documentation tracking | **APPROVED — BD-14 resolved 2026-09-23**. The root documentation repository tracks the canonical set and setup guide; both application repositories are excluded. Documentation remote setup/publication remains a separate step. |
+| 1.7: review and CI | Initial and follow-up PRs are merged. CI passed on the final backend/frontend main commits; evidence below. |
+| 1.7: canonical documentation tracking | **APPROVED — BD-14 resolved 2026-09-23**. The owner published arkatara_docs; the root tracking boundary excludes both application repositories. |
 
 **Documentation tracking update 2026-09-23:** The owner approved creating the root documentation repository after confirming that application code would remain in its existing repositories. The earlier BD-14 deferral is retained in the dated progress notes above as history and is superseded by this approval. Root Git contains only the nine canonical documents, root guide and repository setup files; GitHub remote configuration/publication is separate.
 
-**Remaining completion gates:** review/CI/merge of the application follow-up fixes. BD-14's tracking decision is resolved; documentation remote setup/publication is still a separate pending step before a new collaborator can clone it remotely. Other unresolved commercial, CA and legal entries remain unset and gate their dependent later features. Task 2 is not authorized and has not started.
+**Final remote verification 2026-09-24:** [Backend PR #2](https://github.com/AmirtharajMuthukrishnan/arkatara_backend/pull/2) is merged into `main` at `a8f5354`; its [main CI](https://github.com/AmirtharajMuthukrishnan/arkatara_backend/actions/runs/35901582302) succeeded. [Frontend PR #2](https://github.com/AmirtharajMuthukrishnan/arkatara_frontend/pull/2) is merged into `main` at `b1fc581`; its [main CI](https://github.com/AmirtharajMuthukrishnan/arkatara_frontend/actions/runs/35901741964) succeeded. [Documentation](https://github.com/AmirtharajMuthukrishnan/arkatara_docs) is published at `2df731b`. These verified results supersede earlier dated pending-commit/CI/BD-14 notes. No Task 1 completion gate remains.
+
+**Branch note:** Application `development` branches are behind those verified `main` commits. Task 2 branches start from `origin/main` to include all fixes; synchronize the integration branches through review before merging Task 2. No remote branch was rewritten. All three worktrees use `feature/task-2-domain-model`.
 
 **Objective:** Establish a reproducible project structure, proposed architecture, environments, engineering standards and foundational business configuration without provider integrations.
 
@@ -71,7 +73,7 @@ No direct business contradiction was identified. The roadmap makes hub inventory
 
 **Admin/operations work:** Document local setup, staging/production separation, permission boundaries, migration generation/review/application discipline, deployment responsibilities and recovery expectations. Plan restricted staff administration and configuration audit history. Choose only the minimum operational tooling needed after review.
 
-**Business/account prerequisites:** **BUSINESS DECISION BD-11** for actual operating entity and ownership arrangements; **CA REVIEW CA-03** and **LEGAL REVIEW LR-02** for entity transition requirements; **BUSINESS DECISION BD-13/BD-02** for policy values. **BD-14** for canonical documentation source control was resolved on 2026-09-23; remote setup/publication remains separate. Domain design can proceed within its authorized scope without fabricating real registrations, addresses or entity identities.
+**Business/account prerequisites:** **BUSINESS DECISION BD-11** for actual operating entity and ownership arrangements; **CA REVIEW CA-03** and **LEGAL REVIEW LR-02** for entity transition requirements; **BUSINESS DECISION BD-13/BD-02** for policy values. **BD-14** for canonical documentation source control was resolved on 2026-09-23; remote publication was verified on 2026-09-24. Domain design can proceed within its authorized scope without fabricating real registrations, addresses or entity identities.
 
 **Tests:** Verify environment isolation, configuration validation, API version routing, denied unauthorized access, audit attribution and reproducible setup. CI must detect migration drift and exercise migrations against PostgreSQL where relevant. Demonstrate that changing current entity/configuration references cannot rewrite historical snapshots once those records exist.
 
@@ -81,7 +83,19 @@ No direct business contradiction was identified. The roadmap makes hub inventory
 
 ## 2. Future-proof market, material, catalogue and pricing model
 
-**Status:** PLANNED / NOT STARTED.
+**Status:** IMPLEMENTED AND LOCALLY VERIFIED — REVIEW/CI/MERGE PENDING. Authorized 2026-09-24; verified 2026-09-25. The Task 2.9 transaction binding remains explicitly assigned to Tasks 6–8 below.
+
+| Task 2 area | Implementation and remaining boundary |
+| --- | --- |
+| 2.1–2.5 | Market, Hub, ServiceArea, Material and Purity models/migrations. Approved BLR/HYD and SILVER/GOLD launch labels plus S925 are seeded. No real hubs, service PINs or Gold purities are supplied. |
+| 2.6 | Category activation and exact market/material/category eligibility lookup return explicit approved revision evidence; missing/conflicting policy fails closed. No eligible category or plan defaults. |
+| 2.7 | Product, ProductVariant and InventoryUnit are distinct. Protected relationships, material/purity validation, stable identities and locked definition changes preserve physical/pricing evidence. Units remain DRAFT until Task 3 receiving/movement workflows. |
+| 2.8 | Append-only DRAFT PriceRevision stores explicit FIXED/WEIGHT_BASED inputs, currency and evidence; exact decimal validation and PostgreSQL UPDATE/DELETE protection. No current-price selector, calculation, tax formula or live activation. |
+| 2.9 | Immutable HistoricalPriceSnapshot value contract and stability tests implemented. **Transaction persistence remains a dependency of Tasks 6–8**, when booking/purchase/invoice records and BD-04/CA-02 commitment rules exist. It is not claimed complete for nonexistent transaction tables. |
+| Frontend/API | Read-only reference-data and serviceability endpoints, runtime-validated TypeScript contracts for references, variants, availability and exact draft price inputs. All coverage results return bookable=false. No storefront changes. |
+| Operations | Configuration onboarding and approval dependencies documented in DATA_MODEL.md. Task 3 must add attributable Admin workflows before real configuration/stock onboarding. |
+
+**Validation 2026-09-25:** PostgreSQL upgrade from Task 1, fresh test schema, seed reapplication, reversible price-history trigger, city/material isolation, coverage/eligibility gates and concurrent identity protection pass in the full **176-test backend suite**. Django system checks, migration drift/plan checks, backend lint and formatting pass. Frontend **62 tests**, lint, formatting, TypeScript and production build pass. Task 2 changes are local and uncommitted on `feature/task-2-domain-model`; Task 1's green remote CI does not cover them. Commit/review/CI/merge remain delivery steps. No Task 3 work or live commercial activation has started.
 
 **Objective:** Model the business so Hyderabad and Gold can be enabled through configuration, catalogue/inventory onboarding and reviewed operating policies without major schema, backend or frontend redesign.
 
