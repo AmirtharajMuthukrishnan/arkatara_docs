@@ -1,12 +1,14 @@
 # Architecture and business decision log
 
-Updated: 2026-09-25
+Updated: 2026-10-02
 
 ## Authority and status
 
 Approved business context and explicit owner instructions are binding. New architectural designs, entity details and lifecycle refinements in this documentation set are PROPOSED FOR OWNER REVIEW.
 
-The owner approved the proposed Next.js/React + Django/DRF + PostgreSQL stack and authorized Task 1 implementation on 2026-09-19. Task 1 is now verified complete. On 2026-09-24 the owner authorized Task 2, conditional on successful Task 1 verification; that condition is satisfied. Tasks 3–10 and all unresolved business, CA and legal decisions remain outside that authorization.
+The owner approved the proposed Next.js/React + Django/DRF + PostgreSQL stack and authorized Task 1 implementation on 2026-09-19. Task 1 is verified complete. Task 2 was authorized on 2026-09-24 after that verification. The owner authorized Task 3 on 2026-09-25 and subsequently requested continuation. On 2026-09-26 the owner instructed that Tasks 1–3 remain complete for their delivered scope, made search discoverability a standing requirement and authorized continuing with the next pending task after the plan update if no blocking decision needs approval. Task 4 proceeds under D-20 below. Recorded delivery/CI and live-operation gates remain visible; no unresolved business, CA or legal decision is resolved by this authorization.
+
+The owner's 2026-10-02 clarification (D-21) limits frontend work to design-independent technical foundations until the owner supplies approved UI/design references. This narrows the presentation scope of earlier continuation instructions without removing frontend requirements or blocking independent backend work.
 
 On 2026-09-21, the owner explicitly requested finishing Task 1 only and keeping BD-14 pending. Root repository creation was deferred at that time. On 2026-09-23, the owner approved creating the separate documentation-only root repository described in BD-14 below, superseding that deferral. The owner subsequently published all three repositories; remote verification on 2026-09-24 confirmed the application fixes merged with green CI and the canonical documentation published. The latest Task 2 authorization supersedes the earlier Task 1-only scope.
 
@@ -17,6 +19,49 @@ Examples and suggestions do not decide open rules. Open entries use exactly one 
 Dates below record this documentation consolidation; they do not invent the date of a future legal, tax or operational approval.
 
 ## Finalized decisions
+
+### D-21 — Frontend visual design awaits owner input
+
+- Classification: BUSINESS DECISION.
+- Status: APPROVED scope clarification from the owner on 2026-10-02. The design gate is binding; final UI design, visual direction, branding system and screen-level references have NOT yet been provided or approved.
+- Decision: Do not independently design or finalize frontend presentation from task descriptions, broad brand aspirations or existing provisional screens. The gate covers the customer landing, category and product pages, cart, checkout, staff portal and related interfaces throughout the existing roadmap.
+- Work permitted before design input: Necessary routes, data contracts, server-rendering structure, metadata/SEO architecture, API integration boundaries, non-indexing and privacy controls, accessibility-friendly semantic HTML and tests. Use only minimal unstyled or clearly temporary functional placeholders where unavoidable. Backend and other design-independent implementation may continue within their authorized scope and existing policy gates.
+- Work awaiting owner input: Polished layouts, visual hierarchy, typography, colours, brand assets/system, screen composition and final customer-facing presentation. SEO or a successful technical test/build does not authorize choosing these. Record the owner's approved design reference and its applicable screen scope before implementing that presentation; do not infer approval for other screens.
+- Existing work: The visual styling, page composition and presentation copy already produced during Task 4 are unapproved provisional work, not accepted branding or a final design. Do not continue polishing or treat them as an approved baseline. This documentation update does not remove or replace existing source files or erase technical verification history.
+- Acceptance and sequencing: Keep the ten tasks and original subtask IDs unchanged. Frontend requirements remain in their owning tasks; report technical progress separately from design-dependent work. A task whose Definition of Done includes reviewed presentation is not fully complete until the relevant approved design is implemented and validated. Task 4 remains in progress with its visual/UI portion awaiting owner design input.
+- Authority: This explicit clarification takes precedence over any earlier wording that could imply independent visual-design authorization under D-20 or the roadmap. D-20's search requirements and all unresolved business, CA and legal gates remain in force. The pending design input is a BUSINESS DECISION dependency, not permission to invent a design.
+
+### D-20 — Standing search discoverability and Task 4 continuation
+
+- Status: APPROVED by the owner on 2026-09-26; applies to every remaining task. Task 4 implementation is in progress following the required plan review and lightweight architecture check; development and verification continued on 2026-09-27 under the same authority.
+- Decision: Treat SEO/search discoverability as a normal cross-cutting development requirement within the existing Tasks 4–10. Preserve the ten-task plan and all original subtask IDs; do not create Task 11, replace the roadmap or reopen Tasks 1–3 for minor SEO improvements. Put implementation and acceptance checks with the feature that owns them; use the [single ownership map](TASKS.md#standing-search-discoverability-requirement).
+- Brand/domain: Arka Tara's intended official public domain is `arkatara.in`. Support branded Arka Tara/arkatara and Bangalore/Bengaluru search intent, plus relevant non-branded Silver/S925 jewellery, assisted home-trial and category intent through natural useful content. This records brand/web identity, not legal-entity identity, domain-account access, DNS configuration or deployment approval. BD-11/LR-02 remain open.
+- Content and truth: No ranking guarantee, keyword stuffing, doorway pages, near-identical location combinations, fake ratings/reviews/testimonials/locations/stock or unsupported superiority/purity claims. Structured data must describe verified visible public content. LocalBusiness markup is conditional on appropriate confirmed facts; an attended home-trial service does not imply a public shop address.
+- Architecture: Preserve clean stable product/category URLs, canonical identity, server-rendered public content, factual metadata/schema, useful linking, mobile performance and extensibility across categories/materials/markets. The user's sample paths are illustrative, not mandatory. SEO does not authorize disclosure of private catalogue/media drafts, customer records, payment documents or staff data; indexing controls do not replace authorization.
+- Lightweight Tasks 1–3 review: No expensive SEO architecture blocker found. Next.js App Router supports server rendering and metadata; existing public UUIDs and stable slug-compatible codes support public routes without replacing identity; material/market references are data-driven; media already retains descriptive/alt-text capability and provider-neutral identity. Public-page slugs/metadata, responsive published media and catalogue rendering are natural additive Task 4 work. The private draft/pricing/media boundaries remain intact.
+- Reason: Search and customer usability depend on page, data and URL decisions made during feature work; adding them only after launch risks avoidable rework. Future Gold/city expansion must not require rebuilding the catalogue.
+- Alternatives considered: A separate SEO Task 11, reopening completed foundations, or implementing every launch feature immediately. Retaining the plan with explicit ownership and staged acceptance criteria matches the owner's instruction and avoids duplicate work.
+- Consequences and authority: With no serious architecture blocker identified, continue the next pending task, Task 4, immediately. No major foundation redesign is approved. A later serious architecture change must first explain its problem, future cost, recommendation and effect on existing functionality. Robots/sitemaps, deployed domain/redirect checks, search-console verification/submission, indexation and query/Core Web Vitals monitoring belong to Task 10. Existing business, account, privacy, tax, legal, publication and live-operation gates remain binding; independent storefront work may proceed without inventing their answers.
+- Subsequent clarification, 2026-10-02: D-21 gates visual/UI design pending owner-provided approved references. This continuation and its search requirements authorize design-independent frontend foundations, not independent polished presentation.
+
+### D-19 — Task 3 back-office and onboarding boundary
+
+- Status: Technical implementation under the owner's Task 3 authorization, 2026-09-25; verification continued 2026-09-26. This records implementation choices, not approval of unresolved operating policies.
+- Reference Admin supports audited draft creation and permitted descriptive edits, immutable identity and stale-form protection. Activation, pricing approval and configuration approval are separate workflows; generic forms cannot approve them.
+- Inventory registration creates an unverified DRAFT identity at an intended hub. Actual receipt records HUB custody and QC_PENDING; a recorded inspection can produce AVAILABLE or QUARANTINED. Receiving and inspection require separate permissions and effective approved procedure references scoped exactly to the hub UUID. No procedure values are seeded. This gated onboarding route does not decide BD-09's receiving/QC criteria or require every future stock source to follow one immutable process.
+- Registration, receipt and QC produce atomic, attributable movements/audits with request fingerprints and idempotency. Movement history is append-only at ORM and PostgreSQL UPDATE/DELETE boundaries. Known custody is distinct from legal ownership. Earlier draft units are retained without fabricated receipt or registration history. Downgrade is blocked before removing movement protection once stock evidence exists.
+- CSV onboarding supports draft product/variant definitions and individually identified physical drafts. Preview writes nothing; apply rechecks authorization, references and conflicts under locks and commits the file atomically. Identical retries return the recorded outcome; changed requests cannot reuse an identifier. Limits of 500 rows and 1,000,000 bytes are technical request bounds, not commercial stock or Trial Plan limits.
+- Product media supports main/additional images, video and associated thumbnails, immutable asset identity and audited metadata/retirement. Uploads remain private drafts. The provider-neutral interface has only an explicitly configured local/test adapter; production provider, allowed MIME types and byte limit remain unset under BD-15. No public media URL or storefront publication is enabled. Frontend work is limited to the versioned metadata contract.
+- Alternatives considered: editable stock status dropdowns, direct CSV database writes, automatic availability on import and a hard-coded public storage vendor. Explicit services, retained outcomes and private unconfigured storage preserve evidence and unanswered choices.
+- Remaining BUSINESS DECISION gates: BD-09 procedures, tagging and exception/disposition; BD-08 allocation; BD-11 ownership; BD-15 production storage and upload settings. CA REVIEW CA-03 and LEGAL REVIEW LR-02 remain necessary for ownership arrangements, with LR-04 for applicable retention/access policy. Existing configuration Admin only authors drafts; reviewed activation/supersession must be implemented before live receiving/QC. Reservation, dispatch, sale, customer returns, transfers, reinspection and retirement actions are not implemented by this scope.
+
+### D-18 — Selective implementation traceability
+
+- Status: APPROVED by the owner on 2026-09-25, applicable to existing crucial boundaries and future work in both applications.
+- Decision: Add concise rule/decision references beside important business validations, authority boundaries, unresolved-policy gates and history-preservation code. Use the existing stable IDs; refer to a business-context section only when it adds necessary narrative without an equivalent rule/decision.
+- Maintenance: Keep the canonical task-to-file/symbol map in [TASKS.md](TASKS.md#implementation-reference-map). The [root operating guide](../AGENTS.md#business-reference-comments) defines the convention; both application guides reference it. Update affected references alongside implementation or policy changes.
+- Reason: Make the business purpose discoverable while limiting duplicate explanations and references that become outdated. Routine code does not need task headers or a reference on each line.
+- Scope: Documentation and developer comments only. This instruction does not authorize Task 3, change application behavior, resolve open business/CA/legal choices or imply that referenced future workflows are implemented. Applied migrations remain unchanged.
 
 ### D-17 — Task 2 reference, pricing and evidence boundary
 
@@ -260,6 +305,7 @@ No genuine contradiction was found in the intended business model. The following
 | Example booking states mix payment/visit/return facts | Lifecycle refinements are proposals; core finalized arrival and QC rules remain intact. |
 | Gold weight support vs undecided price formulas | Structural support is required; actual valuation, price commitment and handling policies are not chosen. |
 | Security/audits appear again in Task 10 | Foundational controls start earlier; Task 10 completes, exercises and hardens them. |
+| Standing SEO vs existing ten-task plan | D-20 adds feature-owned acceptance criteria and a single ownership map within Tasks 4–10. Tasks 1–3 stay complete for their delivered scope; Task 4 proceeds after the lightweight review. No Task 11 or duplicate SEO roadmap is introduced. |
 
 ## Canonical documentation and preservation record
 

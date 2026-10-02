@@ -1,8 +1,8 @@
 # Proposed state machines
 
-Status: DOCUMENTATION FOR USER REVIEW. Recorded: 2026-09-19. No state machine has been implemented.
+Status: TASK 3'S GATED ONBOARDING TRANSITIONS IMPLEMENTED; later state machines remain proposals. Updated: 2026-09-26. The tables distinguish the implemented subset from future workflows.
 
-State names, transition shapes and mechanisms below are **PROPOSALS**. Approved invariants are binding; unanswered policy choices are not. A transition described as allowed means structurally permitted **only when every stated guard is satisfied and its BUSINESS DECISION, CA REVIEW or LEGAL REVIEW gate has been resolved for that behavior**. An unresolved gate is not an instruction to choose a default. All referenced IDs remain open in [DECISIONS.md](DECISIONS.md).
+Except for the explicitly marked Task 3 subset, state names, transition shapes and mechanisms below are **PROPOSALS**. Approved invariants are binding; unanswered policy choices are not. A transition described as allowed means structurally permitted **only when every stated guard is satisfied and its BUSINESS DECISION, CA REVIEW or LEGAL REVIEW gate has been resolved for that behavior**. An unresolved gate is not an instruction to choose a default. Referenced unresolved IDs retain their status in [DECISIONS.md](DECISIONS.md).
 
 ## Separate facts, common transition discipline
 
@@ -47,7 +47,24 @@ Forbidden examples:
 
 ## InventoryUnit: availability/disposition with separate custody
 
+### Implemented Task 3 onboarding subset
+
+| Action | From | To | Required evidence and guard |
+| --- | --- | --- | --- |
+| REGISTER | No unit | DRAFT / UNKNOWN custody | Authorized draft registration, unique request ID, intended hub and variant, reason/source reference; creates identity, movement and audit atomically. No receipt or ownership inferred. |
+| RECEIVE | DRAFT / UNKNOWN | QC_PENDING / HUB | Actual physical observation, receiving permission, effective approved `inventory.receiving-procedure-reference` scoped to the exact hub, reason/source reference. |
+| QC_PASS | QC_PENDING / HUB | AVAILABLE / HUB | Recorded RECEIVE at the hub, inspection permission, explicit passing observation and effective approved `inventory.qc-procedure-reference` for that hub. |
+| QC_FAIL | QC_PENDING / HUB | QUARANTINED / HUB | Same receipt/permission/procedure requirements, explicit failed inspection; no damage charge or disposition inferred. |
+
+Each operation rechecks current permission and serializes request/unit writes. An identical retry returns its recorded outcome; changing actor or payload under the same key fails. Observation timestamps cannot precede recorded unit history or claim a future event. State, movement and audit commit together. Ordinary Admin/model edits cannot change custody/status or erase unit/movement evidence.
+
+No procedure reference values are approved or seeded. Configuration Admin authors drafts only, so live receiving/inspection remains blocked pending BD-09 and a reviewed activation workflow. This initial onboarding route is a gated technical subset, not an approval of receiving/QC criteria for all future sources. Existing Task 2 draft rows stay UNKNOWN with no fabricated movement history. Availability alone cannot create a booking.
+
+### Proposed later operational lifecycle
+
 Proposed lifecycle states: `AVAILABLE`, `HELD`, `RESERVED`, `PACKED`, `OUT_FOR_DELIVERY`, `IN_PERSON_TRIAL`, `RETURNING_TO_HUB`, `QC_PENDING`, `SOLD`, `QUARANTINED`, `RETIRED`. A missing/lost flag and condition findings may be separate exception dimensions that always block availability.
+
+The following end-to-end transitions remain proposals. Task 3 does not implement reservation, dispatch, sale, customer return, transfer, reinspection or retirement. Its onboarding QC services do not yet accept later dispatched/returned stock.
 
 `HELD` is optional temporary commitment, not a required deposit policy. `RESERVATION_PENDING` is not proposed as a durable stock state: a request being validated must not appear to have acquired a piece. Committed reservation records establish the guarantee. The exact hold/reserve sequence remains BUSINESS DECISION BD-02.
 

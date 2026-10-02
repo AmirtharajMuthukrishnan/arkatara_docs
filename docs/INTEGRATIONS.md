@@ -1,7 +1,7 @@
 # Planned integrations
 
-Status: PROPOSED FOR OWNER REVIEW; no provider connection or implementation performed\
-Updated/references checked: 2026-09-19
+Status: TASK 3 PRIVATE MEDIA BOUNDARY IMPLEMENTED LOCALLY; external providers remain unconnected and subject to review\
+Updated: 2026-09-26; external planning references last checked: 2026-09-19
 
 Use the [architecture](ARCHITECTURE.md), [finance requirements](COMPLIANCE_AND_FINANCE.md), [state machines](STATE_MACHINES.md) and [decision log](DECISIONS.md) together. Tasks 8 and 9 deliberately follow core business logic.
 
@@ -107,7 +107,23 @@ Support main/additional images, video and thumbnails through durable media metad
 
 Financial/dispatch documents and customer-related assets need access rules distinct from public catalogue media. Preserve issued document versions and references; changing a product image must not rewrite financial history.
 
-Separate environments/buckets or equivalent isolation, least-privilege credentials and backup/retention controls must be planned. Do not select a vendor or implement storage infrastructure during this documentation phase.
+Separate environments/buckets or equivalent isolation, least-privilege credentials and backup/retention controls must be planned. No production vendor, bucket, CDN or provider account has been selected or provisioned.
+
+Task 3 implements `ObjectStorage` with `put/open/delete` operations and a local/test-only private adapter. Settings default to `PRODUCT_MEDIA_STORAGE=UNCONFIGURED`, no root, no byte limit and no allowed MIME types. The local adapter requires an explicit absolute dedicated root; staging/production cannot use it. Technical format support currently covers PNG/JPEG/MP4, with required allowlist, byte limit, structural container checks and agreement between detected type, extension and declared MIME. These checks do not decode/transcode media or scan for malware.
+
+Admin uploads require active staff plus media-add/product-view permissions; downloads require media-view/product-view permissions. Assets are private attachments with no-store/nosniff headers. Metadata contains a durable UUID, role, product/source identity, type, size, digest and `delivery.state=PRIVATE`, without an object key or public URL. Metadata edits/retirement are audited; retirement retains the file and original asset identity. Mobile derivatives, public publication and CDN URLs require later delivery work and reviewed settings.
+
+The upload service owns its database transaction and cleans up its own newly created object after a normal database/audit failure. Crash recovery, orphan reconciliation, scanning/transcoding as appropriate, retention and production access controls must be designed before a live adapter is enabled. The backend README records concrete local configuration and Admin usage. BUSINESS DECISION BD-15 and applicable LEGAL REVIEW LR-04 remain open.
+
+## Task 4 public delivery contract in progress
+
+The public storefront consumes anonymous read-only `/api/v1/catalogue/` and `/api/v1/catalogue/pages/<slug>/` responses through the existing bounded API transport. Server reads do not forward browser credentials, follow API redirects or treat cached client state as authority. Runtime validation checks public page identity, selected market/material, availability and pagination. Missing pages are distinct from API/network failure; collection/product outages propagate to the Next.js server error boundary rather than returning a successful empty catalogue or false 404. The home page can retain meaningful static content and an outage panel without adding noindex solely for feed failure. Invalid selections have a separate recovery state. See [ARCHITECTURE.md](ARCHITECTURE.md#task-4-public-catalogue-and-search-boundaries).
+
+Task 4 does not expose Task 3 storage keys or private download routes. The current backend public media projection is empty. A future approved public image contract contains only public asset UUID, HTTPS URL, factual alt text and positive dimensions. The frontend's `CATALOGUE_MEDIA_ORIGINS` defaults to empty and permits only explicitly configured plain HTTPS origins; matching Next.js image configuration supports responsive delivery. Image URLs with credentials, signed query parameters, private Admin paths or unlisted origins are rejected. Adding an origin is not permission to publish private assets and does not select a production vendor. A live adapter still requires BD-15 settings, appropriate access/retention review and an explicit reviewed publication path.
+
+The current responsive image component reserves layout dimensions and distinguishes the first detail image from lazy-loaded later images, but it cannot turn a private draft into approved public media. Production image processing, video delivery, malware/scanning or transcoding decisions, derivative generation, CDN behavior and actual media performance remain unconnected. Do not treat placeholder illustrations or fixture assets as photographed stock.
+
+Public page metadata uses the intended `https://arkatara.in` identity under D-20. This is a content/URL configuration choice, not DNS, hosting, TLS or search-account provisioning. `SITE_INDEXING_ENABLED=false` keeps the local/prelaunch metadata non-indexable by default. Task 10 owns the coordinated preferred-domain, robots/sitemap, redirect, search-console and deployed performance/indexation checks; no Search Console or Bing account, verification token, submission or analytics vendor has been configured by Task 4.
 
 ## Email, analytics and monitoring
 
