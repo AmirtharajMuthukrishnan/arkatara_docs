@@ -1,6 +1,6 @@
 # Proposed architecture
 
-Status: TASK 1 FOUNDATION AUTHORIZED 2026-09-19; later domain behavior remains for review.
+Status: TASK 1 COMPLETE; TASK 2 AUTHORIZED 2026-09-24 AND IMPLEMENTED LOCALLY; later domain behavior remains for review. Updated: 2026-09-25.
 
 The approved business principles are in [BUSINESS_CONTEXT.md](BUSINESS_CONTEXT.md) and [BUSINESS_RULES.md](BUSINESS_RULES.md). Open decisions, including all BD, CA and LR identifiers below, remain unresolved in [DECISIONS.md](DECISIONS.md). The architecture below is a proposal for meeting those principles, not an approval of unanswered commercial or review questions.
 
@@ -99,11 +99,21 @@ Gold must fit material/purity, pricing-mode and policy dimensions; Hyderabad mus
 - Test invariant boundaries: stock races, assignment access, backend price authority, single QR/link collection, late/duplicate callbacks, deposit separation, immutable invoices, QC release and expansion configuration. Test policy-dependent outcomes only after the relevant decision is approved.
 - Monitor API errors, payment/refund verification failures, stock inconsistencies, background-work failures and reconciliation mismatches. Backups and restoration need practical verification before launch.
 
-Detailed entity proposals are in [DATA_MODEL.md](DATA_MODEL.md); review requirements are in [COMPLIANCE_AND_FINANCE.md](COMPLIANCE_AND_FINANCE.md); adapter boundaries are in [INTEGRATIONS.md](INTEGRATIONS.md). Task 1 foundation code and migrations are authorized; later domain behavior and provider setup still require the corresponding scope approval and decision gates.
+Implemented entities and future proposals are distinguished in [DATA_MODEL.md](DATA_MODEL.md); review requirements are in [COMPLIANCE_AND_FINANCE.md](COMPLIANCE_AND_FINANCE.md); adapter boundaries are in [INTEGRATIONS.md](INTEGRATIONS.md). Task 2's scope is authorized; later domain behavior and provider setup still require corresponding scope approval and decision gates.
+
+## Task 2 read contracts and policy boundary
+
+`GET /api/v1/reference-data/` returns schema_version 1 and arrays of markets, materials, purities and categories, using public UUID, stable code, display name and ACTIVE/COMING_SOON status. Markets include country_code; purities include material_id. Draft/inactive references and purities whose material is hidden are omitted. No hubs, ownership, physical unit identities or prices are exposed.
+
+`GET /api/v1/serviceability/?market=<code>&country_code=<country>&postal_code=<value>` returns the exact query identifiers, state CONFIGURED/UNCONFIGURED/COMING_SOON/INACTIVE/CONFLICT and bookable=false. CONFIGURED means only approved effective geographic coverage. Unknown/draft markets return 404, malformed/repeated parameters return 400, and writes return 405. These two reference endpoints are deliberately anonymous read-only surfaces; existing default API authentication remains in effect elsewhere.
+
+The frontend's `catalog-contracts.ts` validates reference and serviceability JSON after the existing API transport. It also defines and validates future variant, availability and draft price representations. Decimal amounts stay strings; reference activation never derives bookability. Variant/availability/price public listing endpoints and storefront presentation are later tasks.
+
+Catalogue and inventory mutations have validation/protected identity boundaries but no Task 2 Admin CRUD. Pricing revisions are immutable proposals, with PostgreSQL protection against UPDATE/DELETE. Snapshot values copy exact agreed facts rather than referencing mutable display fields. Transaction persistence and database immutability belong with the actual Task 6–8 transaction models; live calculations and tax rules remain gated.
 
 ## Foundation delivery and local verification
 
-The initial foundation PRs were merged into each repository's `development` branch with successful CI. Follow-up Task 1 verification fixes use `fix/task-1-verification`, based on the merged development commits. Feature/fix branches receive CI through pull requests; pushes to `main` and `development` also run CI. Promote reviewed changes to `main` only as a separate release action.
+The initial foundation PRs merged into `development`; follow-up PR #2 in each application subsequently merged into `main` with successful CI, verified on 2026-09-24. `development` is behind those main commits, so Task 2's `feature/task-2-domain-model` branches start from verified `origin/main`. Synchronize development through review before the next integration merge; no remote branch has been rewritten. Feature/fix branches receive CI through pull requests; pushes to main/development also run CI. See TASKS.md for exact evidence; Task 1 CI does not cover local Task 2 changes.
 
 The backend README contains concrete PostgreSQL setup, settings selection, local test commands, migration review/application and recovery expectations. The frontend README describes separate build-time API configuration, predictable request failures and compatible artifact recovery. Runtime secrets, data and deployment settings must remain separate across environments. Staging/production reject missing backend database credentials and unrestricted/empty host configuration, and do not inherit local browser origins.
 
@@ -111,4 +121,4 @@ The API URL helper confines requests to the configured origin and versioned path
 
 On 2026-09-23, the owner resolved BD-14 by approving a documentation-only Git repository at `ARKA TARA/`, superseding the earlier deferral. It tracks `docs/`, root `AGENTS.md`, a repository README and Git setup files. Its explicit tracking list excludes both independent application repositories, local tools, databases, secrets and unlisted files. No application repository is merged into it or registered as a submodule.
 
-The root [README](../README.md) documents how future developers obtain the shared repository and clone the backend/frontend beneath it. Their `../docs/` references remain valid without duplication. A standalone application clone or existing application CI checkout does not automatically contain the shared documents. Documentation changes use the main/development/feature review workflow; dependent application PRs should identify their companion documentation commit/PR. The documentation remote and publication remain a separate step. No Task 2 implementation is authorized yet.
+The root [README](../README.md) documents how future developers obtain the published arkatara_docs repository and clone the backend/frontend beneath it. Their `../docs/` references remain valid without duplication. A standalone application clone or existing application CI checkout does not automatically contain the shared documents. Documentation changes use the main/development/feature review workflow; dependent application PRs should identify their companion documentation commit/PR. Task 2 was explicitly authorized after Task 1 verification.

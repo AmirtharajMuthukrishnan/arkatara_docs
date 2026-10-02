@@ -1,14 +1,14 @@
 # Architecture and business decision log
 
-Updated: 2026-09-23
+Updated: 2026-09-25
 
 ## Authority and status
 
 Approved business context and explicit owner instructions are binding. New architectural designs, entity details and lifecycle refinements in this documentation set are PROPOSED FOR OWNER REVIEW.
 
-The owner approved the proposed Next.js/React + Django/DRF + PostgreSQL stack and authorized Task 1 implementation on 2026-09-19. Tasks 2–10 and all unresolved business, CA and legal decisions remain outside that authorization.
+The owner approved the proposed Next.js/React + Django/DRF + PostgreSQL stack and authorized Task 1 implementation on 2026-09-19. Task 1 is now verified complete. On 2026-09-24 the owner authorized Task 2, conditional on successful Task 1 verification; that condition is satisfied. Tasks 3–10 and all unresolved business, CA and legal decisions remain outside that authorization.
 
-On 2026-09-21, the owner explicitly requested finishing Task 1 only and keeping BD-14 pending. Root repository creation was deferred at that time. On 2026-09-23, the owner approved creating the separate documentation-only root repository described in BD-14 below, superseding that deferral. Remote setup remains a separate step. Task 2 remains unstarted and unapproved.
+On 2026-09-21, the owner explicitly requested finishing Task 1 only and keeping BD-14 pending. Root repository creation was deferred at that time. On 2026-09-23, the owner approved creating the separate documentation-only root repository described in BD-14 below, superseding that deferral. The owner subsequently published all three repositories; remote verification on 2026-09-24 confirmed the application fixes merged with green CI and the canonical documentation published. The latest Task 2 authorization supersedes the earlier Task 1-only scope.
 
 The interrupted Task 1 verification resumed on 2026-09-23 under the same scope. Its implementation and test evidence are recorded in [TASKS.md](TASKS.md); this does not resolve any open policy or approve Task 2.
 
@@ -17,6 +17,17 @@ Examples and suggestions do not decide open rules. Open entries use exactly one 
 Dates below record this documentation consolidation; they do not invent the date of a future legal, tax or operational approval.
 
 ## Finalized decisions
+
+### D-17 — Task 2 reference, pricing and evidence boundary
+
+- Status: Technical implementation under the owner's Task 2 authorization, 2026-09-24; verification continued 2026-09-25. This is not approval of any unresolved commercial value.
+- Decision: Use stable UUID/code identities; separate Market/Hub/ServiceArea, Material/Purity/Category, Product/ProductVariant/InventoryUnit; use explicit draft states and read-only public reference/coverage endpoints.
+- Coverage is exact by selected market, country and postal identifier. Effective overlapping approved rows produce CONFLICT. No PIN-to-hub precedence, intercity fallback or booking authorization is inferred. Category eligibility uses the existing approved-configuration lookup scoped by market/material/category public UUIDs, with no global fallback.
+- Pricing: immutable DRAFT PriceRevision rows represent FIXED/WEIGHT_BASED inputs. NUMERIC(24,6) is storage capacity only; reject excess precision, binary floats and nonfinite input rather than rounding. Currency, units and evidence are explicit. No live formula, rate provider, price selection or commitment timing is implemented.
+- HistoricalPriceSnapshot is a versioned immutable value contract containing copied identity/descriptions, source price revision, exact supplied amount/inputs and separately explicit tax evidence. Tasks 6–8 must persist it in transaction records and enforce database immutability at the approved commitment point. Task 2 does not create placeholder purchases or invoices.
+- InventoryUnit has only DRAFT status in this foundation. Task 3 must introduce audited receiving/movement/transition workflows; hub means operational location, not legal ownership. Generic saves cannot reassign a unit or redefine a variant already referenced by units or prices.
+- Alternatives considered: hard-coded city/material enumerations, global postal uniqueness, a live fixed-price default, early transaction tables and assumed Gold formulas. These would force policies or scope that are not approved.
+- Remaining gates: BUSINESS DECISION BD-04/BD-08/BD-09/BD-11/BD-12/BD-13; CA REVIEW CA-02/CA-03; LEGAL REVIEW LR-02, plus other decision dependencies of later workflows. No existing unresolved entry is closed by this technical implementation.
 
 ### BD-14 — Canonical documentation source control
 
@@ -28,7 +39,7 @@ Dates below record this documentation consolidation; they do not invent the date
 - Reason: Keep one canonical context with its own reviewable change history, while preserving the existing separate backend/frontend repositories.
 - Alternatives discussed: Keeping the shared documents untracked while the decision was pending; a separate documentation repository at the workspace root (selected). Duplicating shared files remains prohibited by D-01.
 - Approval evidence: The owner confirmed the proposed outer-level repository boundary, then instructed: "lets create a new repo for the ARKA TARA/ folder". This records a repository-maintenance choice, not an investor endorsement or a requirement to choose a particular repository count.
-- Consequences and remaining work: Local tracking is authorized. GitHub repository name, remote configuration and publication remain a separate step; no remote is created by this decision record. Application code and other unresolved business/CA/legal decisions are unaffected. Task 1 still needs review/CI/merge of its follow-up fixes; Task 2 is not authorized.
+- Consequences and remaining work: The owner published [arkatara_docs](https://github.com/AmirtharajMuthukrishnan/arkatara_docs); remote verification completed on 2026-09-24. Application repositories remain independent. Task 1 verification and the later Task 2 authorization are recorded in TASKS.md; neither resolves other business/CA/legal entries.
 - History: Proposed and deferred on 2026-09-21; approved on 2026-09-23. Prior no-initialization guidance is superseded only for this explicitly scoped root documentation repository.
 
 ### D-16 — Task 1 technology baseline
@@ -37,7 +48,7 @@ Dates below record this documentation consolidation; they do not invent the date
 - Status: APPROVED stack and AUTHORIZED Task 1; exact compatible versions selected during implementation on 2026-09-19.
 - Reason: Use supported releases with a long-lived Django baseline and current PostgreSQL support while preserving framework compatibility.
 - Alternatives considered: Django 6.1 was current but Django 5.2 is the current LTS; TypeScript 7 and ESLint 10 were tested but rejected because the current Next.js lint toolchain does not yet support them.
-- Consequences: Dependency lockfiles are authoritative. Upgrades require passing lint, type, migration, PostgreSQL, test and production-build checks. Hosting remains unselected. Documentation tracking is now resolved under BD-14; remote publication is separate.
+- Consequences: Dependency lockfiles are authoritative. Upgrades require passing lint, type, migration, PostgreSQL, test and production-build checks. Hosting remains unselected. Documentation tracking is now resolved under BD-14; remote publication was verified on 2026-09-24.
 - Recorded: 2026-09-19; implementation verification continued 2026-09-20.
 
 ### D-01 — One canonical shared documentation set
@@ -189,7 +200,7 @@ Dates below record this documentation consolidation; they do not invent the date
 
 Status: BD-14 IS RESOLVED AS RECORDED ABOVE; ALL OTHER ENTRIES BELOW REMAIN UNRESOLVED.
 
-BD-14 was deferred on 2026-09-21 and approved on 2026-09-23. Its original ID/question remain in the register to preserve the history. Documentation remote configuration/publication remains a separate execution step.
+BD-14 was deferred on 2026-09-21 and approved on 2026-09-23. Its original ID/question remain in the register to preserve the history. The owner subsequently published the documentation remote; verification completed on 2026-09-24.
 
 The original 19 entries and their IDs are preserved verbatim below. The roadmap supplies additional structure, but it does not silently choose the outstanding policies.
 
@@ -214,7 +225,7 @@ The original 19 entries and their IDs are preserved verbatim below. The roadmap 
 | LR-01 | LEGAL REVIEW | Customer and agent custody responsibilities; liability for missing or damaged pieces; any proposed charges; legal constraints on deposit, cancellation, return, exchange and refund policies. | Preserve relevant custody, condition and agreed-term evidence without presuming liability, enforceability or a right to retain money. |
 | LR-02 | LEGAL REVIEW | Legal ownership of inventory, contracting and selling-party identity, and the legal arrangements needed for any future company/entity transition. | Preserve historical parties, ownership evidence and the distinction between business plans and legally effective changes. |
 | LR-03 | LEGAL REVIEW | Applicable dispatch, transport and product-documentation obligations and the allocation of legal responsibility for those requirements. | Keep movement, sale and supporting evidence distinguishable. Coordinate with CA-02 without assuming that an example document or software record establishes compliance. |
-| BD-14 | BUSINESS DECISION | How the canonical shared root docs and root AGENTS.md will be tracked, reviewed and distributed alongside two existing separate Git repositories. **RESOLVED 2026-09-23**; outcome and approval history are recorded above. | One canonical documentation-only root repository; application histories/remotes stay separate and excluded. No submodules or duplicated shared files. Documentation remote setup/publication remains separate. |
+| BD-14 | BUSINESS DECISION | How the canonical shared root docs and root AGENTS.md will be tracked, reviewed and distributed alongside two existing separate Git repositories. **RESOLVED 2026-09-23**; outcome and approval history are recorded above. | One canonical documentation-only root repository; application histories/remotes stay separate and excluded. No submodules or duplicated shared files. Documentation publication was verified on 2026-09-24. |
 | BD-15 | BUSINESS DECISION | Remaining integration/provider choices, validation of the Razorpay product flow for shared QR/link access, channel retry/fallback and OTP resend settings, retention/monitoring operations and whether email is needed. | Keep providers behind boundaries, one shared final-payment context and one Arrival OTP challenge across channels. Do not confuse an operational setting with legal permission or a provider capability already verified. |
 | LR-04 | LEGAL REVIEW | Final Terms, Privacy, Try-at-Home and Refund/Cancellation wording; contact/grievance obligations; personal-data retention/access/deletion; service versus marketing consent; applicable WhatsApp/SMS/DLT requirements. | Keep purpose, policy/version and consent evidence distinguishable; minimize customer data exposure. No template, website draft or provider integration is assumed to establish legal compliance. |
 
@@ -240,7 +251,7 @@ No genuine contradiction was found in the intended business model. The following
 | Topic | Reconciliation |
 | --- | --- |
 | Previously duplicated shared docs vs latest structure rule | The latest explicit instruction supersedes duplication. One root docs/ set is canonical; child AGENTS.md files point to it. |
-| Earlier "roadmap not supplied" instruction | Superseded: roadmap is now supplied, but application implementation still awaits document review/approval. |
+| Earlier "roadmap not supplied" instruction | Superseded: the roadmap is supplied, Task 1 is verified complete and Task 2 is explicitly authorized. Later task scope and unresolved decisions still require their own authority. |
 | Optional deposit vs Task 8 deposit integration | The roadmap specifies capability, not a mandatory charge or commercial policy. BD-01/CA-01 remain open. |
 | Suggested cart/box values | Seven days and two boxes are suggestions, not finalized configuration. |
 | City inventory vs hub-specific inventory | Compatible refinement: each physical unit belongs to a hub in a city. Same-city sourcing policy remains open. |
@@ -268,4 +279,4 @@ The previously identical business-context.md and decision-register.md files unde
 
 Only superseded duplication instructions and the outdated statement that the roadmap had not yet been supplied are replaced. They are recorded above as superseded rather than carried forward as active instructions.
 
-Shared root documents remain outside both child Git histories and are now tracked by their own root repository under approved BD-14. A standalone application clone or its CI checkout still does not include this context automatically; obtain the root documentation repository using its README layout. Its GitHub remote/publication remains separate.
+Shared root documents remain outside both child Git histories and are now tracked by their own root repository under approved BD-14. A standalone application clone or its CI checkout still does not include this context automatically; obtain the root documentation repository using its README layout. Its GitHub publication was verified on 2026-09-24.

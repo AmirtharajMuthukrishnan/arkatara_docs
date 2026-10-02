@@ -28,12 +28,11 @@ shared documents inside either application repository.
 
 ## Reconstructing the workspace
 
-The documentation repository currently has no remote. Once its remote has been
-configured, a new developer can use these commands from a parent directory,
-replacing `<documentation-remote-url>` with that approved URL:
+The owner published all three repositories. A new developer can use these commands
+from a parent directory:
 
 ```powershell
-git clone <documentation-remote-url> "ARKA TARA"
+git clone https://github.com/AmirtharajMuthukrishnan/arkatara_docs.git "ARKA TARA"
 Set-Location "ARKA TARA"
 git clone git@github.com:AmirtharajMuthukrishnan/arkatara_backend.git arkatara_backend
 git clone git@github.com:AmirtharajMuthukrishnan/arkatara_frontend.git arkatara_frontend
@@ -49,8 +48,8 @@ tools and dependencies are installed separately using the application READMEs.
 The initial documentation baseline is committed on `main`; `development` starts
 from that baseline. Use focused documentation branches from `development` and
 the same review/promotion approach described in
-[ARCHITECTURE.md](docs/ARCHITECTURE.md). Remote pull requests become available once
-the documentation remote is configured.
+[ARCHITECTURE.md](docs/ARCHITECTURE.md). The documentation remote is
+[arkatara_docs](https://github.com/AmirtharajMuthukrishnan/arkatara_docs).
 
 Keep implementation status and decision evidence current. Record owner approvals
 without deleting earlier decision history; implementation does not resolve open
@@ -60,5 +59,5 @@ automatically synchronize the two application histories.
 
 Before committing, check `git diff --check` and `git diff --cached --name-only`.
 Keep the root tracking list narrow; review any deliberate expansion before adding
-new paths. BD-14 records approval of this layout. GitHub remote creation and
-publication remain a separate step.
+new paths. BD-14 records approval of this layout; publication was verified on
+2026-09-24.

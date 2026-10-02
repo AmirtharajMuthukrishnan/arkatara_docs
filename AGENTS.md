@@ -4,11 +4,11 @@
 
 ARKA TARA is a Bengaluru-first jewellery Try-at-Home business: "Order many. Try them at home. Buy any."
 
-Task 1 implementation is authorized as of 2026-09-19. Implement only the approved foundation scope while keeping later domain behavior and unresolved decisions gated.
+Task 1 is complete and verified. The owner authorized Task 2 on 2026-09-24 after Task 1 verification. Implement the Task 2 domain foundation while keeping Tasks 3–10 and unresolved business/CA/legal decisions gated. See docs/TASKS.md for current implementation and validation evidence.
 
 Read [BUSINESS_CONTEXT](docs/BUSINESS_CONTEXT.md), [BUSINESS_RULES](docs/BUSINESS_RULES.md), [ARCHITECTURE](docs/ARCHITECTURE.md), [DATA_MODEL](docs/DATA_MODEL.md) and [DECISIONS](docs/DECISIONS.md) before proposing or implementing a task. Then consult [STATE_MACHINES](docs/STATE_MACHINES.md), [COMPLIANCE_AND_FINANCE](docs/COMPLIANCE_AND_FINANCE.md), [INTEGRATIONS](docs/INTEGRATIONS.md) and [TASKS](docs/TASKS.md) as relevant.
 
-The single canonical shared documentation set is root docs/. Child repositories must reference it rather than duplicate full files. Do not move/delete documentation without explaining the reorganization and verifying useful content is preserved. Under BD-14, approved on 2026-09-23, a separate root Git repository tracks the shared docs, root guide and repository setup files. Both application repositories and local tools/data are excluded by the root tracking list. The documentation remote is to be configured separately; see [README.md](README.md) for workspace setup. Do not add application code or submodules to the root repository.
+The single canonical shared documentation set is root docs/. Child repositories must reference it rather than duplicate full files. Do not move/delete documentation without explaining the reorganization and verifying useful content is preserved. Under BD-14, approved on 2026-09-23, a separate root Git repository tracks the shared docs, root guide and repository setup files. Both application repositories and local tools/data are excluded by the root tracking list. The documentation remote is published; see [README.md](README.md) for workspace setup. Do not add application code or submodules to the root repository.
 
 ## Working technical direction
 

@@ -1,8 +1,35 @@
 # Proposed domain data model
 
-Status: TASK 1 FOUNDATIONS IMPLEMENTED; later domain entities and constraints remain proposed for user review. Updated: 2026-09-23.
+Status: TASK 1 COMPLETE; TASK 2 DOMAIN FOUNDATION IMPLEMENTED LOCALLY; later transactional entities remain proposed. Updated: 2026-09-25.
 
-The implemented foundation covers StaffUser, LegalEntity, BusinessConfiguration and AuditEvent. Their migrations do not implement or approve the later market, catalogue, trial, inventory, pricing or finance designs below. Task 2 remains unstarted.
+Task 1 covers StaffUser, LegalEntity, BusinessConfiguration and AuditEvent. Task 2 adds Market, Hub, ServiceArea, Material, Purity, Category, Product, ProductVariant, InventoryUnit and draft PriceRevision. The sections below still include future entities; a proposed table is not an implemented model. Trial, reservation, purchase, payment, tax-code and invoice tables remain later work.
+
+## Implemented Task 2 boundary
+
+- Every reference has a public UUID; market, hub, material, category and product codes are stable unique identifiers separate from display names. Purity codes are unique within material. A variant has a unique opaque SKU; business logic never parses it. Size/specification belong to the variant, while every physical piece has a different InventoryUnit UUID.
+- Reference statuses are DRAFT, ACTIVE, COMING_SOON and INACTIVE. New rows default to DRAFT. Separate seed migrations insert only approved BLR/Bengaluru/ACTIVE, HYD/Hyderabad/COMING_SOON, SILVER/ACTIVE, GOLD/COMING_SOON and Silver S925. Reversing seed migrations preserves rows; reapplying does not reset edited labels/statuses. No category, product, hub, inventory, PIN, price, tax or policy values are seeded.
+- Hub belongs to one immutable market; ServiceArea is scoped by market/country/postal identifier with effective timestamps and approval reference. Several coverage revisions may coexist; exact active/effective matches with evidence yield CONFIGURED, none UNCONFIGURED and overlaps CONFLICT. No routing priority is inferred. Coverage alone never establishes bookability.
+- Category trial eligibility reuses BusinessConfiguration. Its exact scope is `{market: <market public UUID>, material: <material public UUID>, category: <category public UUID>}`. All three references must be ACTIVE; no global fallback applies. The returned revision may explicitly say false. A true eligibility value alone is not a trial plan, stock reservation or booking permission.
+- Ordinary ORM writes run validation and reject bulk bypasses. Purity must match the variant's material. Used foreign keys use PROTECT. Unit variant/hub and stable codes cannot be reassigned through generic saves. Once units or price revisions reference a variant, its defining specification cannot change, and its product cannot change category. Unit/price creation locks the same variant/product rows as definition edits. These cross-row identity guards are application-level; arbitrary SQL is not a supported onboarding interface.
+- InventoryUnit has only DRAFT status. No receiving, available-stock counter, transfer, ownership, custody, reservation or QC workflow exists yet. Task 3 must extend the schema with movements and authorized transitions; DRAFT records are never available to book.
+- PriceRevision is append-only DRAFT evidence, unique per variant/revision. Mode is FIXED or WEIGHT_BASED. Explicit currency, optional fixed amount, weight/unit, rate/unit, rate source, formula reference and typed charge components permit incomplete proposals without inventing values. WEIGHT_BASED cannot have a fixed amount. NUMERIC(24,6) is technical capacity, not an approved currency exponent: reject overflow/extra precision/nonfinite/binary floats; do not round. New revisions preserve previous inputs. ORM guards and a reversible PostgreSQL UPDATE/DELETE trigger protect price history.
+- HistoricalPriceSnapshot schema version 1 copies catalogue identity/descriptions, price revision UUID/number, mode/currency, supplied agreed amount, input components and explicit tax evidence. Its defensive JSON serialization is independent of subsequent catalogue/config edits. Tax is either UNCONFIGURED (no invented zero rate) or RECORDED with policy reference and exact components; it does not validate a CA formula or prove payment. **Tasks 6–8 must persist and protect these snapshots with real transaction records** at the approved commitment point. The value object alone is not a database financial ledger.
+
+## Configuration onboarding and activation dependencies
+
+This is a proposed intake/review procedure for Task 3's attributable Admin workflows, not an instruction to populate production through a shell. Preserve actor, time, source evidence, old/new values and immutable revision identifiers when those workflows are added. Current reference saves supply validation and timestamps, not a complete operational change log. No real configuration has been onboarded beyond the approved seed identities.
+
+| Record | Intake and review before activation |
+| --- | --- |
+| Market | Stable code, display name, country, reviewed launch state. Expansion readiness is BUSINESS DECISION BD-12/BD-13; ACTIVE is not launch approval. |
+| Hub | Market, stable identifier and reviewed operational location. Do not infer ownership: BUSINESS DECISION BD-11, CA REVIEW CA-03 and LEGAL REVIEW LR-02. Fulfilment allocation remains BUSINESS DECISION BD-08. |
+| ServiceArea | Exact market/country/postal list, effective period and approval evidence under BUSINESS DECISION BD-13. Reject country mismatch and invalid postal format. Review overlaps explicitly; never choose the newest rule silently. |
+| Material/Purity | Stable material identity and separately reviewed purity specification. Gold assortment and operating handling remain BUSINESS DECISION BD-12; examples are not approved offerings. |
+| Category/Variant | Category identity and explicit scoped eligibility under BUSINESS DECISION BD-13. Review product/specification/purity consistency. Box counting and material mixing remain BUSINESS DECISION BD-03. |
+| Physical unit | Variant and market hub, reviewed receiving/tagging evidence and later movement record. BUSINESS DECISION BD-09/BD-11 gate real inventory operations; DRAFT must not be changed into available stock generically. |
+| Price/tax | Explicit draft inputs/source/revision only. BUSINESS DECISION BD-04/BD-12 approve formula, source and commitment; CA REVIEW CA-02 approves tax/rounding/accounting. No default rate or commercial rounding is supplied. |
+
+Task 3 must preserve change history and approval attribution when exposing these operations. Activation is a prospective controlled action; do not erase historical policy/price/stock evidence to repair a configuration mistake.
 
 Approved invariants come from [BUSINESS_RULES.md](BUSINESS_RULES.md). Every open decision remains unresolved in [DECISIONS.md](DECISIONS.md). Proposed fields, entity boundaries and constraint mechanisms below require design review; they must not be interpreted as choosing deposit, price, stock, hub, payment, return or legal policies.
 
@@ -52,7 +79,7 @@ The implemented Task 1 setting keys are `trials.maximum-boxes` (positive integer
 | `ProductMedia` | Main/additional image, video and thumbnail references, ordering and accessibility/metadata. | Object-storage key/reference independent of a particular host URL. Validate ownership and media purpose. Do not assume one media type or place large binaries in catalogue rows. |
 | Pricing configuration / calculation | Supports FIXED and WEIGHT_BASED modes with separately typed/versioned input components such as quantity, weight/unit, rate, fees, currency and tax references when applicable. | No approved Gold formula, metal-rate source, rounding method or lock time is implied. Server-calculated transaction snapshots must contain enough inputs and outcomes to explain the amount. BUSINESS DECISION BD-04/BD-12; CA REVIEW CA-02. |
 
-Use exact decimal values and explicit currency/units for monetary and weight values. Integer minor-unit amounts may be used at provider boundaries with explicit conversion. Numeric precision and rounding need review before implementation, particularly for WEIGHT_BASED calculations; never use binary floating-point for persisted money.
+Use exact decimal values and explicit currency/units for monetary and weight values. Task 2's technical capacity is described above. Business rounding and provider minor-unit conversion still need review before calculation/integration, particularly for WEIGHT_BASED pricing; never use binary floating-point for persisted money.
 
 ## Physical inventory and custody
 

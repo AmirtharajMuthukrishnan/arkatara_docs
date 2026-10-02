@@ -95,7 +95,7 @@ The authoritative questions and status are in [DECISIONS.md](DECISIONS.md). This
 - After-sale returns/exchanges/refunds: BD-10, LR-01, CA-02.
 - Business entity and stock ownership: BD-11, LR-02, CA-03.
 - Gold operating policy: BD-12; initial setting values: BD-13.
-- Canonical-document version control: BD-14 was resolved on 2026-09-23 with the approved documentation-only root repository; remote setup/publication is separate. This does not resolve any commercial or review policy.
+- Canonical-document version control: BD-14 was resolved on 2026-09-23 with the approved documentation-only root repository; remote publication was verified on 2026-09-24. This does not resolve any commercial or review policy.
 - Provider choices and operational integration settings: BD-15.
 - Financial/document requirements: CA-02; dispatch/product legal requirements: LR-03.
 - Privacy, customer-facing terms, consent, retention, marketing and messaging obligations: LR-04.
