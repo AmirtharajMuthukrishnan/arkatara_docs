@@ -1,7 +1,7 @@
 # Planned integrations
 
 Status: TASK 3 PRIVATE MEDIA BOUNDARY IMPLEMENTED LOCALLY; external providers remain unconnected and subject to review\
-Updated: 2026-09-26; external planning references last checked: 2026-09-19
+Updated: 2026-10-03; external planning references last checked: 2026-09-19 (not revalidated by this scope update)
 
 Use the [architecture](ARCHITECTURE.md), [finance requirements](COMPLIANCE_AND_FINANCE.md), [state machines](STATE_MACHINES.md) and [decision log](DECISIONS.md) together. Tasks 8 and 9 deliberately follow core business logic.
 
@@ -13,14 +13,20 @@ Use the [architecture](ARCHITECTURE.md), [finance requirements](COMPLIANCE_AND_F
 | NotificationProvider | Accept a business notification intent; route reviewed templates and track delivery attempts/status | Whether a booking/payment is actually successful |
 | SMSProvider | Map authorized messages and registered metadata to the selected SMS service | Independent OTP generation or commercial policy |
 | WhatsApp adapter | Map eligible message intents/templates and authenticated callbacks to Cloud API | Customer consent assumptions or purchase completion |
-| OTPProvider/domain boundary | Generate and verify one arrival challenge, protect its secret, enforce configured expiry/attempt limits | Choosing service-versus-marketing permissions or treating message delivery as successful OTP verification |
+| OTP/domain boundary | Purpose-bound booking phone verification, Arrival OTP and future customer authentication challenges with hashing, expiry, atomic consumption and abuse controls | Reusing proof across purposes, choosing legal liability/consent, or treating message delivery as verification |
 | ObjectStorage boundary | Store/retrieve media and controlled documents by durable object reference | Publicly exposing financial documents or embedding storage URLs as business identity |
 | Optional EmailProvider | Send authorized email notifications if business need is confirmed | Requiring an email address for the guest pilot without a decision |
 | Analytics/monitoring adapters | Record approved events and operational health | Financial source of truth or unrestricted copies of customer data |
 
 Names are conceptual, not generated classes or a mandate for an abstract framework. Keep provider-specific payloads and credentials outside business workflows. Use development fakes in early tasks; fakes must not operate as production collection or customer-message services.
 
-Task 1 excludes payment/messaging integration. Task 6 prepares provider seams and fakes; Task 7 supplies arrival verification logic without real messaging; Task 8 integrates Razorpay; Task 9 adds WhatsApp/SMS. Object-storage abstraction belongs with media onboarding in Task 3.
+Task 1 excludes payment/messaging integration. Task 4 now supplies all required persistence, including durable work items, challenge evidence, provider attempts and settlement records. Task 6 implements booking phone verification, customer authentication/access (customer rollout disabled), provider contracts and development fakes; Task 7 implements staff authentication and arrival verification; Task 8 integrates Razorpay; Task 9 adds WhatsApp/SMS. Task 3's storage boundary remains; Task 5 completes public media delivery using Task 4 models. No live flow may rely on fakes.
+
+## Authentication boundaries
+
+D-23 keeps StaffUser as Django AUTH_USER_MODEL and CustomerAccount separate. Choose reviewed authentication components and record persistence requirements in 4.M1; this decision does not select JWT, Cognito or cookie sessions. Customer credentials must be rejected by `/staff/api/v1/`; staff endpoints also require action and assignment scope. Customer APIs require customer identity and ownership. Staff MFA is required before live access.
+
+The requested staff host `staff.arkatara.com` differs from the public `arkatara.in` domain. Confirm ownership, aliases, cookie scope, CSRF/CORS and any proxy routing before deployment. Do not share broadly scoped credentials or infer identity isolation from DNS. Test actual origins and selected transport. Guest booking grants are scoped/revocable and never become account-history claims. Registered phone recovery must address number reassignment before customer activation.
 
 ## Razorpay — Task 8
 
@@ -66,6 +72,7 @@ Keep access tokens and app secrets on the backend; configure rotation, restricte
 
 The roadmap requires messages for:
 
+- Booking phone OTP before upfront payment.
 - Booking confirmed.
 - Out for delivery.
 - Arrival OTP.
@@ -74,6 +81,8 @@ The roadmap requires messages for:
 - Deposit refund.
 - Invoice issued.
 - Cancellation.
+
+Optional customer signup/login/recovery messages require separate purposes and reviewed templates before account activation; they remain disabled with the customer feature. Booking/Arrival OTPs are not reusable customer authentication messages.
 
 Keep event intent separate from template language/version and provider approval/category. A notification should be sent only from the corresponding authoritative business event. For example, sending a payment link is not payment confirmation.
 
@@ -91,6 +100,8 @@ Store required registration/template identifiers as protected operational config
 
 ## Shared Arrival OTP and payment link
 
+Booking phone verification is a separate pre-payment step under D-25, bound to the pending booking, phone and purpose. Task 6 owns its verification semantics and Task 9 delivers its messages. The approved dual-channel requirement below is specifically for Arrival OTP; booking/login channel and fallback settings remain BD-15/LR-04. No purchase-selection OTP is added.
+
 The delivery domain creates one arrival challenge, bound to the appropriate booking/visit. WhatsApp and SMS receive the same code from that challenge, not separately generated codes.
 
 Securely retain verification material, expiry, attempt counters and verification timestamp. Avoid plaintext OTPs in long-lived storage or logs. If asynchronous sending requires short-lived sensitive payload retention, protect and expire it; the precise mechanism is a technical proposal to review, not a new commercial policy.
@@ -103,11 +114,11 @@ The planned dual-channel arrival delivery is an approved requirement. If a chann
 
 ## Object storage — Task 3
 
-Support main/additional images, video and thumbnails through durable media metadata and provider-neutral object references. Product media should be validated for type/size and served appropriately for mobile use; the exact storage vendor/CDN and limits remain BD-15.
+Support main/additional images, video and thumbnails through durable media metadata and provider-neutral object references. D-22 selects S3/CloudFront as the target storage/delivery direction. Type/size limits, region/account/access configuration and reviewed publication/processing remain implementation and BD-15 gates.
 
 Financial/dispatch documents and customer-related assets need access rules distinct from public catalogue media. Preserve issued document versions and references; changing a product image must not rewrite financial history.
 
-Separate environments/buckets or equivalent isolation, least-privilege credentials and backup/retention controls must be planned. No production vendor, bucket, CDN or provider account has been selected or provisioned.
+Separate environments/buckets, least-privilege credentials and backup/retention controls must be planned. D-22's target choice does not provision buckets, CDN distributions or provider accounts; actual configuration and verification remain outstanding.
 
 Task 3 implements `ObjectStorage` with `put/open/delete` operations and a local/test-only private adapter. Settings default to `PRODUCT_MEDIA_STORAGE=UNCONFIGURED`, no root, no byte limit and no allowed MIME types. The local adapter requires an explicit absolute dedicated root; staging/production cannot use it. Technical format support currently covers PNG/JPEG/MP4, with required allowlist, byte limit, structural container checks and agreement between detected type, extension and declared MIME. These checks do not decode/transcode media or scan for malware.
 
@@ -116,6 +127,8 @@ Admin uploads require active staff plus media-add/product-view permissions; down
 The upload service owns its database transaction and cleans up its own newly created object after a normal database/audit failure. Crash recovery, orphan reconciliation, scanning/transcoding as appropriate, retention and production access controls must be designed before a live adapter is enabled. The backend README records concrete local configuration and Admin usage. BUSINESS DECISION BD-15 and applicable LEGAL REVIEW LR-04 remain open.
 
 ## Task 4 public delivery contract in progress
+
+Historical heading retained for links: D-26 moves original 4.1–4.7 execution to Task 5. References to Task 4 in this section describe retained earlier work; current Task 4 supplies persistence only. Existing public/private contracts stay intact.
 
 The public storefront consumes anonymous read-only `/api/v1/catalogue/` and `/api/v1/catalogue/pages/<slug>/` responses through the existing bounded API transport. Server reads do not forward browser credentials, follow API redirects or treat cached client state as authority. Runtime validation checks public page identity, selected market/material, availability and pagination. Missing pages are distinct from API/network failure; collection/product outages propagate to the Next.js server error boundary rather than returning a successful empty catalogue or false 404. The home page can retain meaningful static content and an outage panel without adding noindex solely for feed failure. Invalid selections have a separate recovery state. See [ARCHITECTURE.md](ARCHITECTURE.md#task-4-public-catalogue-and-search-boundaries).
 

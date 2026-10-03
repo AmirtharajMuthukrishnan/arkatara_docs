@@ -12,8 +12,12 @@
 !/docs/BUSINESS_RULES.md
 !/docs/ARCHITECTURE.md
 !/docs/DATA_MODEL.md
+!/docs/ALL_BACKEND_MODELS_REFERENCE.md
 !/docs/STATE_MACHINES.md
 !/docs/COMPLIANCE_AND_FINANCE.md
 !/docs/INTEGRATIONS.md
 !/docs/TASKS.md
 !/docs/DECISIONS.md
+!/docs/reviews/
+/docs/reviews/*
+!/docs/reviews/CUSTOMER_ACCOUNT_READINESS_2026-10-02.md

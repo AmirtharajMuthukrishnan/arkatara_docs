@@ -1,6 +1,6 @@
 # Proposed state machines
 
-Status: TASK 3'S GATED ONBOARDING TRANSITIONS IMPLEMENTED; later state machines remain proposals. Updated: 2026-09-26. The tables distinguish the implemented subset from future workflows.
+Status: TASK 3'S GATED ONBOARDING TRANSITIONS IMPLEMENTED; D-23–D-25 BOUNDARIES APPROVED, later detailed state machines remain proposals. Updated: 2026-10-03. Task 4 owns persistence/constraints and model tests; Tasks 6–9 implement the corresponding transitions/providers. The tables are not implementation evidence.
 
 Except for the explicitly marked Task 3 subset, state names, transition shapes and mechanisms below are **PROPOSALS**. Approved invariants are binding; unanswered policy choices are not. A transition described as allowed means structurally permitted **only when every stated guard is satisfied and its BUSINESS DECISION, CA REVIEW or LEGAL REVIEW gate has been resolved for that behavior**. An unresolved gate is not an instruction to choose a default. Referenced unresolved IDs retain their status in [DECISIONS.md](DECISIONS.md).
 
@@ -14,14 +14,24 @@ Allowed transitions are enumerated below; unlisted transitions are forbidden unt
 
 ## TrialBooking: booking commitment and visit progress
 
+Checkout mode and customer ownership are not workflow states that can later be reassigned. GUEST/null stays guest forever; ACCOUNT ownership is derived from verified customer authentication at checkout and preserved after session expiry or account closure. There is no guest-to-account claim transition. Phone edits never transfer ownership. Task 6 implements booking-specific guest access and account ownership checks on Task 4's schema.
+
+### Booking phone verification
+
+Before payment initiation, use a challenge bound to the pending booking, phone and purpose. Candidate challenge states are issued, verified, consumed, expired, locked or superseded. Issuance is not verification; delivery is not proof. Verification and use must enforce atomic attempt/expiry/single-use rules and idempotent booking continuation. A new phone requires new proof; stale/replayed/other-purpose evidence cannot authorize checkout. Relevant changes to accepted booking details must retain versions and receive the applicable reacceptance/verification checks.
+
+Booking phone proof cannot start a doorstep trial or authenticate a customer account. Arrival proof cannot initiate signup or claim guest history. OTP proves channel control at that moment, not legal liability or acceptance of all policies. Store policy acceptance separately. Numeric security/resend settings and recovery details remain reviewed configuration.
+
+### Booking progression
+
 Proposed states: `DRAFT`, `CONFIRMATION_PENDING`, `CONFIRMED`, `PREPARING`, `READY_FOR_DISPATCH`, `OUT_FOR_DELIVERY`, `IN_PERSON_TRIAL`, `VISIT_CONCLUDED`, `CANCELLED`.
 
-The anonymous local cart is not a DRAFT booking and never reserves inventory. A persisted draft begins only when a server-side booking workflow is invoked. `CONFIRMATION_PENDING` does not declare that every booking owes a deposit. Payment state is separate. `VISIT_CONCLUDED` records the operational visit result; payment/reconciliation, returns and QC may require later work, subject to the approved handover/closure rule.
+The guest local cart is not a DRAFT booking and never reserves inventory. A persisted draft begins only when a server-side booking workflow is invoked. D-25 requires upfront collection before confirmation for the launch flow, after booking phone verification; calling the amount a deposit does not settle its legal/accounting classification. Payment state remains separate. `VISIT_CONCLUDED` records the visit result, not completion of payment/reconciliation, returns or QC.
 
 | From | To | Trigger and required guards | Open gates |
 | --- | --- | --- | --- |
-| DRAFT | CONFIRMATION_PENDING | Backend accepts a valid booking submission after rechecking serviceability, box categories, offering/configuration and authoritative calculations. Record the approval/hold requirements actually applicable. | BUSINESS DECISION BD-01, BD-02, BD-03, BD-04, BD-07, BD-08, BD-13. |
-| CONFIRMATION_PENDING | CONFIRMED | All approved acceptance requirements met; any required unit commitments are valid and atomically recorded. Verified payment is a guard only if an approved policy makes it one. | BUSINESS DECISION BD-01, BD-02, BD-08. |
+| DRAFT | CONFIRMATION_PENDING | Recheck serviceability, boxes, configuration and calculations; bind verified booking phone proof and applicable terms/details before initiating upfront payment. Record approved hold requirements without assuming when stock is acquired. | D-25; remaining BD-01, BD-02, BD-03, BD-04, BD-07, BD-08, BD-13. |
+| CONFIRMATION_PENDING | CONFIRMED | Trusted backend upfront receipt for the correct obligation plus all approved acceptance requirements; required unit commitments are valid and recorded atomically. Neither OTP alone nor payment alone is sufficient. | D-25; remaining amount/treatment/hold gates BD-01, BD-02, BD-08, CA-01. |
 | CONFIRMED | PREPARING | Authorized operations workflow starts preparation against current allocations/manifest. | BUSINESS DECISION BD-08, BD-09. |
 | PREPARING | READY_FOR_DISPATCH | Every required piece checked/packed; category composition and combined booking manifest agree; required dispatch evidence available. | BUSINESS DECISION BD-03, BD-08, BD-09; CA REVIEW CA-02; LEGAL REVIEW LR-03. |
 | READY_FOR_DISPATCH | OUT_FOR_DELIVERY | Valid assignment, recorded handover and manifest dispatch; exact unit custody updated consistently. | BUSINESS DECISION BD-07, BD-08, BD-09; CA REVIEW CA-02; LEGAL REVIEW LR-01, LR-03. |
@@ -39,6 +49,8 @@ The roadmap examples `PAYMENT_PENDING` and `FINAL_PAYMENT_PENDING` are represent
 
 Forbidden examples:
 
+- Payment initiation or booking confirmation from an unverified, expired or differently bound booking phone challenge.
+- Guest-to-account reassignment by phone match, signup, claim endpoint or signed-in guest checkout.
 - DRAFT directly to OUT_FOR_DELIVERY or IN_PERSON_TRIAL.
 - OUT_FOR_DELIVERY to IN_PERSON_TRIAL based on a frontend flag, agent assertion or notification-delivered event instead of backend OTP verification.
 - Any payment webhook directly setting all trial items SOLD or resurrecting CANCELLED/expired booking commitments.
@@ -184,6 +196,10 @@ Forbidden examples:
 
 | Scenario | Required result |
 | --- | --- |
+| A guest phone later belongs to a registered customer | No order history is linked or disclosed by matching the number. Registered recovery must not treat number possession alone as proof of old account ownership. |
+| Customer credentials are sent to a staff endpoint | Deny regardless of a coincident numeric ID, supplied role flag or generic authenticated status. |
+| Two requests consume one booking OTP or change its phone | One valid continuation; retries are idempotent, changed binding requires new verification. Arrival/login challenges cannot substitute. |
+| A stale agent request records a different visit result | Recheck current authorized assignment/version under transaction locks; preserve the original result and reject or explicitly correct with evidence. |
 | Two customers request the last eligible piece | Only one incompatible commitment can succeed; the other sees authoritative unavailability. Anonymous cart entries confer no priority. |
 | Reservation expiry races verified payment | Preserve actual payment and reservation facts; lock/recheck before any acceptance/allocation. Resolution is gated by BD-02, not timestamp guesswork or automatic stock resurrection. |
 | Selection changes while payment is pending | Preserve old amount/version and pending evidence. Apply only the approved BD-05 rule; never silently reuse the old payable context for a new amount. |

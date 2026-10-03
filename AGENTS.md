@@ -4,7 +4,7 @@
 
 ARKA TARA is a Bengaluru-first jewellery Try-at-Home business: "Order many. Try them at home. Buy any."
 
-Tasks 1–3 are complete for their authorized scope; recorded CI/review and live operating gates remain explicit. On 2026-09-26 the owner made SEO/search discoverability a standing requirement and authorized continuing the next pending task after a lightweight review. No serious foundation blocker was found; Task 4 is in progress under DECISIONS.md D-20. Preserve the existing ten-task plan and original subtask IDs. Unresolved business/CA/legal decisions remain gated. See docs/TASKS.md for current implementation and validation evidence.
+Tasks 1–3 are complete for their authorized scope; recorded CI/review and live gates remain explicit. Task 4 is in progress and was re-scoped on 2026-10-02 to cross-app model completion under D-26: models, integrity guards, migrations and model/database tests, not workflows or UI. Original storefront 4.1–4.7 now execute in Task 5, with IDs, source and evidence preserved. Keep ten tasks and all original IDs. D-20 search requirements and unresolved business/CA/legal gates remain binding. See docs/TASKS.md for the completion matrix and actual evidence; documentation updates do not implement the models.
 
 Read [BUSINESS_CONTEXT](docs/BUSINESS_CONTEXT.md), [BUSINESS_RULES](docs/BUSINESS_RULES.md), [ARCHITECTURE](docs/ARCHITECTURE.md), [DATA_MODEL](docs/DATA_MODEL.md) and [DECISIONS](docs/DECISIONS.md) before proposing or implementing a task. Then consult [STATE_MACHINES](docs/STATE_MACHINES.md), [COMPLIANCE_AND_FINANCE](docs/COMPLIANCE_AND_FINANCE.md), [INTEGRATIONS](docs/INTEGRATIONS.md) and [TASKS](docs/TASKS.md) as relevant.
 
@@ -12,7 +12,7 @@ The single canonical shared documentation set is root docs/. Child repositories 
 
 ## Working technical direction
 
-Approved stack: Next.js/React frontend, Django/DRF backend, PostgreSQL, modular monolith, /api/v1/. Exact framework/runtime versions are selected and recorded during Task 1; hosting remains unselected.
+Approved stack: Next.js/React, Django/DRF, PostgreSQL and a modular monolith. Public/customer API uses `/api/v1/`; staff API target is `/staff/api/v1/`. Task 1 records runtime versions; D-22 records AWS hosting direction, not deployed infrastructure. D-23–D-25 settle identity and booking boundaries.
 
 Use Django Admin for back-office operations and a separate mobile staff portal. Add no microservices, Kubernetes or event streaming without a demonstrated requirement.
 
@@ -20,10 +20,13 @@ Use Django Admin for back-office operations and a separate mobile staff portal. 
 
 Follow [D-21](docs/DECISIONS.md#d-21--frontend-visual-design-awaits-owner-input), the owner's 2026-10-02 scope clarification. Final UI design, visual direction, branding system and screen-level references have not been supplied. Do not independently design or finalize polished landing, category, product, cart, checkout, staff or related screens from roadmap descriptions. Existing Task 4 presentation is unapproved provisional work, not an accepted design baseline.
 
-Until the owner supplies the applicable approved design, limit frontend work to necessary routes, contracts, server-rendering structure, metadata/SEO, API boundaries, non-indexing controls, accessibility-friendly semantic HTML, tests and minimal unstyled or clearly temporary functional placeholders where unavoidable. Continue authorized backend and other design-independent work. Frontend requirements remain in the same tasks; record technical progress separately and keep design-dependent acceptance pending. See the [canonical task gate](docs/TASKS.md#frontend-design-input-gate).
+Until the owner supplies the applicable approved design, limit frontend work to necessary routes, contracts, server-rendering structure, metadata/SEO, API boundaries, non-indexing controls, accessibility-friendly semantic HTML, tests and minimal unstyled or clearly temporary functional placeholders where unavoidable. Current Task 4 has no new frontend implementation; D-26 transfers original storefront IDs to Task 5. Record technical progress separately and keep presentation acceptance pending. See the [canonical task gate](docs/TASKS.md#frontend-design-input-gate).
 
 ## Critical rules
 
+- StaffUser remains AUTH_USER_MODEL; CustomerAccount is separate. Explicit principal/action/scope checks protect staff APIs. Customer signup/login/account checkout are prepared but disabled initially; guest checkout remains permanent. See D-23 and R-33–R-38.
+- Guest bookings remain permanently customer-unlinked, including matching-phone accounts and signed-in guest checkout. No claim/import or indirect consent/audit linkage. Preserve immutable ownership and historical contact/address facts; never cascade account closure into transaction history.
+- Booking-specific phone OTP precedes upfront payment; confirmation also requires verified collection and valid acceptance. Arrival OTP is a separate purpose. Amount, deposit/fee classification, treatment and stock-hold/late-payment rules remain partially unresolved under BD-01/BD-02 and CA/LR review.
 - One booking normally means one customer home visit, with multiple category-specific boxes fulfilled together from the selected city's inventory. No independent checkouts merely because boxes differ.
 - Each box has one category. Guest localStorage carts do not reserve stock and are never authoritative.
 - Hub inventory is city-specific; no implicit intercity fulfilment. Material/purity and Product/Variant/physical Unit remain distinct.
@@ -45,6 +48,8 @@ Never hard-code market/material identity, PIN codes, GST rates, deposits, box/pi
 Apply [D-20](docs/DECISIONS.md#d-20--standing-search-discoverability-and-task-4-continuation) to every change in Tasks 4–10. Assess crawling/indexing, stable URLs, metadata, semantic HTML, links, truthful structured data, mobile performance, duplicate content and future category/material/city expansion. Use the [task ownership map](docs/TASKS.md#standing-search-discoverability-requirement); build each feature at its natural stage, without duplicate work or Task 11.
 
 Arka Tara's intended public domain is `arkatara.in`; this does not resolve legal identity or configure deployment. Keep critical public catalogue content server-rendered, private routes protected/non-indexable, and metadata consistent with verified visible facts. No invented prices, stock, locations, reviews, unsupported claims, keyword stuffing, doorway pages or ranking promises. Minor SEO additions do not reopen Tasks 1–3; explain a genuinely major architecture change before making it.
+
+The requested staff host is `staff.arkatara.com` (D-23), not an implicit change to the public domain. Confirm ownership, aliases and actual credential/CORS/CSRF topology before deployment. Do not silently substitute a different domain.
 
 ## Business reference comments
 

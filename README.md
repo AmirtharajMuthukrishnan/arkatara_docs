@@ -6,13 +6,19 @@ This repository versions the single canonical project/business documentation in
 [TASKS.md](docs/TASKS.md) for implementation status and
 [DECISIONS.md](docs/DECISIONS.md) for approved and unresolved decisions.
 
+## Current scope
+
+Task 4 is in progress as [cross-app model completion](docs/TASKS.md#4-cross-app-model-completion): model definitions, integrity protections, migrations and verification for the agreed roadmap. Original storefront 4.1–4.7 now execute under Task 5 with their IDs/evidence retained. D-23–D-26 record separate staff/customer identity, permanent unlinked guest bookings, booking OTP before upfront payment and this sequencing change. These are approved requirements, not claims of implemented authentication or checkout. The [dated readiness review](docs/reviews/CUSTOMER_ACCOUNT_READINESS_2026-10-02.md) retains its code observations and explicitly supersedes its earlier shared-auth/guest-claim proposals.
+
+The [2026-10-03 model checkpoint](docs/reviews/TASK4_MODEL_FOUNDATION_2026-10-03.md) records the first implemented identity/booking/assignment models and verification. Task 4 remains incomplete; existing data and migration history have not been reset.
+
 ## Repository boundaries
 
 The workspace has three independent Git repositories:
 
 | Location | Contents |
 | --- | --- |
-| `ARKA TARA/` | This documentation repository: nine canonical documents, `AGENTS.md`, this README, `.gitignore` and `.gitattributes`. |
+| `ARKA TARA/` | This documentation repository: nine canonical reference documents, explicitly tracked review records, `AGENTS.md`, this README, `.gitignore` and `.gitattributes`. |
 | `ARKA TARA/arkatara_backend/` | Django/DRF backend and its own Git history/remote. |
 | `ARKA TARA/arkatara_frontend/` | Next.js/React frontend and its own Git history/remote. |
 

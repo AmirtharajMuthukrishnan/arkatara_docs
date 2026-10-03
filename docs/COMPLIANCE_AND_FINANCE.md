@@ -1,7 +1,7 @@
 # Compliance and finance
 
 Status: Software requirements and proposed evidence design for owner review; no compliance certification\
-Updated: 2026-09-19
+Updated: 2026-10-03
 
 This document defines what the software must preserve and support. It does not decide the business's tax position or certify legal compliance. Open questions retain the BUSINESS DECISION, CA REVIEW and LEGAL REVIEW labels in [DECISIONS.md](DECISIONS.md).
 
@@ -68,7 +68,7 @@ Software requirements:
 1. Distinguish a working purchase/calculation or document draft from an issued TaxInvoice.
 2. Allocate controlled numbers at the approved issuance boundary with concurrency protection. Preserve number, series, issuing entity and reviewed period/scope.
 3. Prevent duplicate issued identifiers within that approved scope. Do not assume the correct series scope merely from current single-city operation.
-4. Freeze issued invoice header and line snapshots. A stored rendered document is useful evidence, but does not replace the underlying frozen values.
+4. Freeze issued invoice header, line snapshots and line membership: no adding/removing/reassigning lines after issue. Preserve currency, issuer and recipient facts independently of mutable references. A stored rendered document is useful evidence, but does not replace the underlying frozen values.
 5. Retain original issued records. Corrections use linked, authorized adjustment/correction evidence appropriate to the reviewed rules; never overwrite an old invoice to make totals match.
 6. Record actor, reason, timing and relationship to the original for issue, cancellation/void where permitted, adjustment and refund activity.
 
@@ -76,7 +76,7 @@ CA REVIEW CA-02 determines numbering format/scope, legally relevant issue timing
 
 ## Trial Deposit
 
-Commercial decisions BD-01 and accounting/tax decisions CA-01 remain separate. The architecture must allow reasonable future outcomes without assuming that a deposit is always collected, always refundable, always retained or always credited.
+D-25 requires upfront collection before booking confirmation for the launch flow, after booking phone verification. BD-01/BD-02 are partially resolved only to that extent. Amount, basis, deposit/fee classification, application/refund/retention and expiry/late-payment outcomes remain open. Commercial BD-01, accounting/tax CA-01 and legal LR-01 decisions remain separate; required collection does not imply any particular refund, credit or revenue treatment.
 
 Illustration of the approved distinction only:
 
@@ -134,6 +134,10 @@ Use controlled matching, review status, responsible actor and explanation for re
 
 ## Audit, access and privacy
 
+D-23 keeps StaffUser and CustomerAccount separate, with explicitly scoped authentication and staff permissions. D-24 keeps guest bookings permanently unlinked to registered accounts, including matching-phone accounts. Customer order history and authorized business reporting are distinct access purposes; old guest transactions remain auditable business records without becoming account history.
+
+Guest checkout still processes personal data. OTP is evidence of phone-channel control at a time, not permanent personal identity, KYC, contractual acceptance or automatic legal liability. Preserve the required requester/recipient/payment evidence and policy acceptance without assuming those parties are identical. Guest consent/audit records must not become an indirect customer-account link. Account closure follows reviewed retention/anonymization, never cascading deletion of financial/stock history; do not invent retention periods.
+
 Capture attributable evidence for price/configuration changes, physical movements, QC, refunds, invoice actions, staff assignments and payment administration. Retain actor/service identity, time, reason, affected record and safe before/after or event details.
 
 Restrict financial and personal records to permitted staff. Assignment restrictions apply at the backend, not just through hidden UI elements. Keep raw OTPs, secrets, card data and unnecessary customer details out of logs/analytics.
@@ -143,6 +147,10 @@ Append-only business history requires access controls and tested preservation; a
 LEGAL REVIEW LR-04 must settle retention, access/deletion requirements and customer-facing policy wording. Preserve required financial evidence while ensuring a reviewed treatment of personal data; do not invent a retention period.
 
 ## Review evidence and later verification
+
+Task 4 now owns all agreed persistence, migrations and model/history verification under D-26. Tasks 6–9 own booking/operational/payment/messaging behaviour; Task 10 verifies live readiness. A completed model layer alone cannot be described as financially operational or legally compliant.
+
+Funding reports must reconcile to retained sale, collection, refund, settlement and inventory evidence across guest and account eras. Define each metric and preserve original city/entity/time facts. Do not equate bookings with sales, deposits with revenue or phone numbers with proven unique people. Use aggregate/redacted pitch data; transaction-level diligence needs controlled access and appropriate review, not public exposure of addresses/phones.
 
 Before dependent release, retain review records for applicable GST/registration, deposits, invoice samples and numbering, challan samples, refund/correction treatment, entity attribution, customer terms/privacy and grievance handling.
 

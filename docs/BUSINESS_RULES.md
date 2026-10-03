@@ -1,7 +1,7 @@
 # Business rules
 
 Status: Approved business invariants and explicit roadmap requirements; settings and unresolved policies remain open\
-Updated: 2026-09-19
+Updated: 2026-10-03
 
 This is the canonical rule reference. Read [DECISIONS.md](DECISIONS.md) before interpreting any example as policy.
 
@@ -20,7 +20,7 @@ The seven-day cart duration, two-box pilot limit, three/five-piece plans and INR
 | R-01 | One TrialBooking may contain multiple TrialBoxes; each TrialBox belongs to exactly one category. A Ring box cannot contain Chains. |
 | R-02 | One TrialBooking normally represents one customer home visit, with all boxes fulfilled together from the selected city's inventory for the same customer and address. Multiple boxes never imply independent customer checkouts. |
 | R-03 | Browsing, Trial Cart, booking, reservation, dispatch, trial, selection, purchase, payment, invoice and inventory return remain distinct business concepts. A booking is not automatically a sale. |
-| R-04 | The pilot has no required customer login, password or registration wall. Booking collects name, mobile, address and PIN code without requiring an account. |
+| R-04 | Guest browsing/checkout has no required account or registration wall and remains available after optional customer accounts launch. Booking collects name, mobile, address and PIN code, with booking phone verification under R-36. Account-free does not mean anonymous to the business. |
 | R-05 | Trial Cart selections persist locally through refresh, category/navigation changes and browser restart for a configured period. The roadmap selects localStorage; no customer account is required for this persistence. |
 | R-06 | Adding to or restoring an anonymous cart never reserves stock. Browser selections are untrusted customer intent. |
 | R-07 | Backend validation controls prices, availability, categories, eligibility, deposit, tax, serviceability and payment status. Stale or manipulated frontend data cannot establish a booking. |
@@ -56,7 +56,7 @@ The seven-day cart duration, two-box pilot limit, three/five-piece plans and INR
 | --- | --- |
 | R-23 | Agent QR and customer payment URL for the same final payable amount refer to the same PaymentAttempt/transaction context. Different presentation channels must not create independent payable charges. Retry and changed-selection rules remain open. |
 | R-24 | Backend gateway verification and authenticated webhook processing determine payment state. Screenshots, client callbacks and agent assertions alone cannot mark payment successful. Processing must be idempotent. |
-| R-25 | Trial Deposit is separate from jewellery price. Applying previously collected funds changes the amount outstanding, not the historical jewellery selling price. Whether/how to charge or apply a deposit remains unresolved. |
+| R-25 | Upfront collection before booking confirmation is required for the launch flow under D-25; its amount, basis, classification and application/refund/retention remain open. A Trial Deposit is separate from jewellery price: applying previously collected funds changes the amount outstanding, not historical selling value. |
 | R-26 | Business funds use business accounts. Payments, refunds, gateway transactions, gateway settlements and bank settlements must be traceable and reconcilable. No sensitive card data is stored. |
 | R-27 | Issued historical invoices are immutable and numbers controlled. Sale values, applicable taxes and legal-entity details must be snapshotted. Never recalculate old financial facts from current catalogue/tax/entity configuration. |
 | R-28 | Subsequent policy/configuration changes do not rewrite earlier commitments. Corrections/refunds must preserve original evidence; exact documents/tax treatment require CA REVIEW. |
@@ -64,6 +64,19 @@ The seven-day cart duration, two-box pilot limit, three/five-piece plans and INR
 | R-30 | Privileged price, stock, refund, invoice, assignment and payment-administration actions require attributable audit history. |
 | R-31 | Compliance-supporting software does not by itself establish legal/tax compliance. Uncertain treatment must be classified explicitly for review. |
 | R-32 | Transactional/service messaging is separate from marketing. A service/purchase phone number does not automatically grant marketing consent. |
+
+## FINALIZED RULE: identity separation and booking verification
+
+The additional identity/booking rules below were approved through D-23–D-25 on 2026-10-02. They are required behaviour, not a claim of implementation or legal certification.
+
+| ID | Rule |
+| --- | --- |
+| R-33 | `StaffUser` remains Django's sole `AUTH_USER_MODEL`; registered customers use a separate `CustomerAccount` identity and authentication boundary. Employees may independently be customers without merging identities by phone/email. Staff provisioning and revocation are separate from customer signup/closure. |
+| R-34 | One TrialBooking supports immutable GUEST/ACCOUNT checkout mode. Guest customer-account reference stays null forever, including signed-in guest checkout; no later automatic linking, claim/import or indirect account-history link is permitted. Account ownership comes from trusted customer authentication and cannot be reassigned by changing contact details. |
+| R-35 | Accepted bookings retain historical name/phone/address and relevant policy/verification evidence independently of mutable profiles. Account closure and contact edits must not delete financial/stock history, rewrite prior customer facts or relabel account bookings as guest bookings. Retention/privacy treatment remains LR-04/CA review. |
+| R-36 | Verify a booking/phone/purpose-bound OTP before initiating upfront payment or confirming the booking. Keep booking verification separate from Arrival OTP and account login/recovery. Phone changes invalidate proof; expiry, attempt limits and atomic single use apply. OTP is channel-control evidence, not permanent identity, KYC or automatic legal liability. |
+| R-37 | Customer identity/authentication support is prepared before launch but signup/login/account checkout remain disabled server-side until explicit readiness approval. Permanent guest access is booking-specific, not phone-based order lookup. Recycled-number recovery and historical account-data disclosure must be addressed before customer activation. |
+| R-38 | Staff APIs use `/staff/api/v1/` and a dedicated staff host under D-23. Explicit principal type, action permissions and assignment/market/hub scope protect operations; host/path separation or `IsAuthenticated` alone is insufficient. Staff MFA is a live-readiness requirement; customer credentials never authorize staff actions. |
 
 ## CONFIGURABLE RULE: values and scopes
 
@@ -85,8 +98,8 @@ Changing policy configuration requires authorization and audit evidence. Applica
 
 The authoritative questions and status are in [DECISIONS.md](DECISIONS.md). This index groups them without supplying answers.
 
-- Deposits and their outcomes: BD-01; accounting/tax: CA-01.
-- Booking commitment, reservations, expiry and late payments: BD-02.
+- Upfront collection amount/basis/classification and outcomes: BD-01 partially resolved by D-25; accounting/tax remains CA-01.
+- Booking commitment, reservations, expiry and late payments: BD-02 partially resolved by D-25; verified upfront collection is required, stock-hold and exception policies remain open.
 - Plan quantities, variants, repeated-category boxes, mixed metals and substitutions: BD-03.
 - Price commitment and Gold pricing: BD-04.
 - Pending payment, retries, changed selection and physical handover: BD-05; pilot methods: BD-06.
