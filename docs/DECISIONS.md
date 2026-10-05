@@ -1,6 +1,6 @@
 # Architecture and business decision log
 
-Updated: 2026-10-03
+Updated: 2026-10-04
 
 ## Authority and status
 
@@ -19,6 +19,19 @@ Examples and suggestions do not decide open rules. Open entries use exactly one 
 Dates below record this documentation consolidation; they do not invent the date of a future legal, tax or operational approval.
 
 ## Finalized decisions
+
+### D-27 — Persistent guest tracking and payment-start stock reservations
+
+- Status: APPROVED implementation direction by the owner's 2026-10-04 instruction to implement the discussed checkout models within Task 4 and synchronize references. This extends D-24/D-25 without enabling workflows or settling commercial values.
+- Guest continuity: Guest checkout remains account-free and permanently customer-unlinked. Mandatory booking tracking uses `GuestBrowserSession` (opaque credential digest, issuance/expiry/revocation/rotation) and `GuestBookingAccessGrant` (one booking, one browser session, scope and validity). Task 6 sends the raw random credential in a host-only Secure/HttpOnly cookie, with reviewed SameSite, CSRF and origin handling. Multiple grants support multiple bookings without overwriting earlier orders. Refresh does not erase a valid cookie; cookie loss/expiry needs recovery, not phone-based order enumeration.
+- Recovery: A single-booking recovery secret plus a fresh `GuestRecoveryPhoneChallenge` can restore access to that booking. Recovery proof is distinct from booking OTP, account login and Arrival OTP. A recovery link alone or a mobile number alone must not reveal historical orders. Grant redemption and subsequent access issuance are Task 6 workflows; TTL, delivery and abuse limits remain reviewed configuration.
+- Booking sequence: Draft intent and immutable selections/terms -> booking phone verification -> review -> explicit payment-start action -> atomic whole-selection reservation -> provider order/payment -> verified captured collection and allocation -> confirmed booking. Draft creation, OTP send and OTP verification never reserve stock. Seal the completed box/item/acceptance graph before advancing to VERIFIED; do not seal the booking header before inserting its contents.
+- Stock: The payment context supplies the explicit expiry. `InventoryReservation` retains HELD/CAPTURE_PENDING/COMMITTED or release evidence, and `TrialItemAllocation` binds requested variants to physical units. PostgreSQL excludes incompatible live reservations. Starting capture protects the holds; ambiguous provider outcomes require reconciliation before release. Expiry does not delete booking tracking/history. A late or extra receipt remains financial evidence and cannot revive a released booking automatically.
+- Payments: Implement a neutral `BookingCharge`, versioned `PaymentContext`, mutable `PaymentAttempt`, authenticated-event inbox, immutable `GatewayTransaction` and `PaymentAllocation`. Authorization, capture, business acceptance, revenue recognition and settlement stay separate. Integer minor-unit amounts and explicit currency are required; no deposit/fee or tax classification is selected. Manual authorization/capture is the intended integration path to evaluate, not proof every live gateway/account/method supports it.
+- Reliability: Store principal/operation/key/fingerprint/result identity in `IdempotencyRecord`. Reuse the same key for retries of the same action; a changed request needs a different key. Durable `OutboxCommand`, `NotificationEvent` and `NotificationAttempt` retain intended effects and delivery progress. They do not send messages, validate gateway signatures or guarantee remote exactly-once processing by their existence.
+- Migration: Preserve existing booking and grant IDs, contacts, expiry/revocation and each old token digest through an additive per-grant session backfill. No account linking, fabricated payment, policy activation or migration-history reset. Evidence-removing downgrade is refused after use; prefer compatible code rollback or reviewed forward recovery.
+- Remaining gates: BD-02's hold trigger is now resolved to explicit payment initiation. Duration, late-payment/refund outcomes and retry/cancellation policy remain open. BD-01 amount/basis/classification, BD-03 quantities, BD-08 hub sourcing, BD-13 limits, BD-15 provider/operating settings and CA/LR reviews remain open. Checkout models are implemented and tested in Task 4; account-authentication, delivery, sale/invoice, refunds/settlement and other matrix coverage still need their remaining model work. Customer rollout remains disabled under D-23/R-37.
+- Evidence: [Checkout implementation and recovery record](reviews/TASK4_CHECKOUT_MODELS_2026-10-04.md). No live deployment or legal/compliance certification is implied.
 
 ### D-26 — Task 4 cross-app model completion
 
@@ -306,6 +319,8 @@ Dates below record this documentation consolidation; they do not invent the date
 Status: BD-14 IS RESOLVED; BD-01/BD-02 ARE PARTIALLY RESOLVED BY D-25; OTHER OPEN QUESTIONS REMAIN UNRESOLVED. D-22 selects AWS hosting/storage direction without resolving all BD-15 provider/operational settings.
 
 **2026-10-02 partial resolution:** Upfront collection before booking confirmation is now the approved launch direction, preceded by booking phone OTP. Original BD-01/BD-02 questions below are retained for history, not permission to omit that sequence. Amount, basis, classification, application/refund/retention, stock-hold trigger/duration, expiry and late-payment treatment still require decisions and applicable CA/legal review.
+
+**2026-10-04 further partial resolution:** D-27 now fixes the hold trigger at explicit payment initiation, after booking OTP. Earlier statements that the trigger remains open describe the earlier checkpoint. Timeout values, provider capture capability, safe reconciliation and commercial expiry/late-payment outcomes remain gated.
 
 BD-14 was deferred on 2026-09-21 and approved on 2026-09-23. Its original ID/question remain in the register to preserve the history. The owner subsequently published the documentation remote; verification completed on 2026-09-24.
 

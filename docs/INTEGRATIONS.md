@@ -1,7 +1,7 @@
 # Planned integrations
 
 Status: TASK 3 PRIVATE MEDIA BOUNDARY IMPLEMENTED LOCALLY; external providers remain unconnected and subject to review\
-Updated: 2026-10-03; external planning references last checked: 2026-09-19 (not revalidated by this scope update)
+Updated: 2026-10-04; external planning references last checked: 2026-09-19 (not revalidated by this scope update)
 
 Use the [architecture](ARCHITECTURE.md), [finance requirements](COMPLIANCE_AND_FINANCE.md), [state machines](STATE_MACHINES.md) and [decision log](DECISIONS.md) together. Tasks 8 and 9 deliberately follow core business logic.
 
@@ -23,6 +23,8 @@ Names are conceptual, not generated classes or a mandate for an abstract framewo
 Task 1 excludes payment/messaging integration. Task 4 now supplies all required persistence, including durable work items, challenge evidence, provider attempts and settlement records. Task 6 implements booking phone verification, customer authentication/access (customer rollout disabled), provider contracts and development fakes; Task 7 implements staff authentication and arrival verification; Task 8 integrates Razorpay; Task 9 adds WhatsApp/SMS. Task 3's storage boundary remains; Task 5 completes public media delivery using Task 4 models. No live flow may rely on fakes.
 
 ## Authentication boundaries
+
+D-27 implements guest credential/grant/recovery persistence and the future cookie contract only. Task 6 must issue a high-entropy raw token via a host-only Secure/HttpOnly cookie, store only its digest, check CSRF on unsafe browser requests, reauthorize each booking and support explicit expiry/revocation/rotation. Same-origin public API routing is preferred where deployment permits; actual origin/cookie topology still needs verification. Session loss does not delete bookings; booking-specific recovery needs both its secret and fresh purpose-bound OTP. There is no phone-history endpoint or guest-to-account claim.
 
 D-23 keeps StaffUser as Django AUTH_USER_MODEL and CustomerAccount separate. Choose reviewed authentication components and record persistence requirements in 4.M1; this decision does not select JWT, Cognito or cookie sessions. Customer credentials must be rejected by `/staff/api/v1/`; staff endpoints also require action and assignment scope. Customer APIs require customer identity and ownership. Staff MFA is required before live access.
 
@@ -47,6 +49,10 @@ BUSINESS DECISION BD-15 includes validating the selected Razorpay product flow, 
 Do not mutate an existing collection amount silently when selection changes. Retain payment history and apply the future BD-05 policy for stale requests, cancellations and retries.
 
 ### Verification, failure handling and evidence
+
+The 2026-10-04 models implement BookingCharge, PaymentContext/Attempt, GatewayEvent/Transaction, PaymentAllocation and typed OutboxCommand. They do not contact Razorpay or validate a signature. D-27's intended authorization/capture sequence must be checked against the selected live account, product and payment methods; do not assume manual capture is universally available or silently accept auto-capture without a reviewed late-payment strategy. Network timeouts keep capture protection and route to reconciliation. Provider event dedupe is distinct from actual payment identity; preserve extra/late receipts without allocating to closed booking contexts.
+
+Task 9 consumes NotificationEvent/Attempt and SEND_NOTIFICATION outbox commands. Template/provider references are explicit, without approved defaults. OTP hashes cannot reconstruct a code for delivery: asynchronous senders need a short-lived protected secret payload/envelope reference, access controls and purge handling. Routine records/logs must never contain plaintext OTPs, browser/recovery tokens or card data. Outbox fencing/retry semantics still need worker tests; a dedupe UUID alone does not make a remote provider idempotent.
 
 - Authenticate provider callbacks/signatures using the chosen product's current official mechanism and the original signed request data.
 - Correlate account/environment, provider reference, intended purpose, amount and currency before accepting financial evidence.

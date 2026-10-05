@@ -1,8 +1,8 @@
 # Proposed state machines
 
-Status: TASK 3'S GATED ONBOARDING TRANSITIONS IMPLEMENTED; D-23–D-25 BOUNDARIES APPROVED, later detailed state machines remain proposals. Updated: 2026-10-03. Task 4 owns persistence/constraints and model tests; Tasks 6–9 implement the corresponding transitions/providers. The tables are not implementation evidence.
+Status: TASK 3'S GATED ONBOARDING TRANSITIONS IMPLEMENTED; D-27 PRE-VISIT CHECKOUT STATE STORAGE IMPLEMENTED, later detailed state machines remain proposals. Updated: 2026-10-04. Task 4 owns persistence/constraints and model tests; Tasks 6–9 implement the corresponding transitions/providers. Target tables are not implementation evidence.
 
-Except for the explicitly marked Task 3 subset, state names, transition shapes and mechanisms below are **PROPOSALS**. Approved invariants are binding; unanswered policy choices are not. A transition described as allowed means structurally permitted **only when every stated guard is satisfied and its BUSINESS DECISION, CA REVIEW or LEGAL REVIEW gate has been resolved for that behavior**. An unresolved gate is not an instruction to choose a default. Referenced unresolved IDs retain their status in [DECISIONS.md](DECISIONS.md).
+Except for the explicitly marked Task 3 subset and D-27 checkout storage, state names, transition shapes and mechanisms below are **PROPOSALS**. Approved invariants are binding; unanswered policy choices are not. A transition described as allowed means structurally permitted **only when every stated guard is satisfied and its BUSINESS DECISION, CA REVIEW or LEGAL REVIEW gate has been resolved for that behavior**. An unresolved gate is not an instruction to choose a default. Referenced unresolved IDs retain their status in [DECISIONS.md](DECISIONS.md).
 
 ## Separate facts, common transition discipline
 
@@ -13,6 +13,18 @@ For every transition, record the previous/new state, actor or verified system ev
 Allowed transitions are enumerated below; unlisted transitions are forbidden until explicitly designed and reviewed. Status read models may show useful summaries, but they cannot mutate the authoritative machine. Corrections add evidence and follow a reviewed correction workflow rather than editing away a prior event.
 
 ## TrialBooking: booking commitment and visit progress
+
+### Implemented pre-visit persistence under D-27
+
+As of 2026-10-04 the storage model supports `DRAFT -> VERIFIED -> PAYMENT_PENDING -> CONFIRMED`, with `DRAFT/VERIFIED -> CANCELLED` and `PAYMENT_PENDING -> PAYMENT_EXPIRED/CANCELLED`. Sealing requires complete selections and accepted policies; VERIFIED binds consumed booking OTP. Draft/OTP operations hold no inventory. Explicit payment initiation creates a complete held selection and collection context. Confirmation requires a paid context, allocated captured money and committed inventory. No API performs these transitions yet.
+
+`BookingCharge`: QUOTED -> DUE -> COLLECTED (or VOID before collection). `PaymentContext`: OPEN -> CAPTURING -> PAID; OPEN can EXPIRE/CANCEL, while ambiguous outcomes enter REVIEW_REQUIRED. Closing an issued provider order requires reconciliation evidence. Capture-pending contexts cannot expire directly. `InventoryReservation`: HELD -> CAPTURE_PENDING -> COMMITTED, or safe EXPIRED/RELEASED with timestamps/reason. No post-confirmation stock release/custody workflow is implemented by this checkpoint.
+
+`PaymentAttempt`: CREATING -> PENDING -> AUTHORIZED -> CAPTURE_PENDING -> SUCCEEDED, with failure/expiry/review branches. AUTHORISATION and CAPTURE are immutable GatewayTransaction facts; PaymentAllocation applies captured funds once within receipt/charge limits. A late/extra capture remains evidence even if it cannot confirm the booking. Notification and outbox outcomes never substitute for provider verification.
+
+Guest access uses expiring/revocable browser sessions and individual booking grants. Credential rotation preserves grant relationships. Recovery uses a distinct single-use secret and fresh GuestRecoveryPhoneChallenge, never account/arrival/booking OTP reuse.
+
+The older CONFIRMATION_PENDING proposal below is superseded for pre-visit checkout by these D-27 states. Later visit states remain target work. These storage guards are not an enabled checkout, retry, refund or cancellation service; timeouts and commercial exception outcomes remain open.
 
 Checkout mode and customer ownership are not workflow states that can later be reassigned. GUEST/null stays guest forever; ACCOUNT ownership is derived from verified customer authentication at checkout and preserved after session expiry or account closure. There is no guest-to-account claim transition. Phone edits never transfer ownership. Task 6 implements booking-specific guest access and account ownership checks on Task 4's schema.
 
@@ -45,7 +57,7 @@ This is a proposed straight-through path. Rescheduling, re-packing and an except
 
 Track `trial_outcome` independently, with candidate values such as unset, selected-for-purchase, no-purchase, failed-visit or aborted. A selection is still not a financially confirmed purchase. Proposed purchase/return/financial completion projections should identify outstanding work before presenting any overall completion indicator.
 
-The roadmap examples `PAYMENT_PENDING` and `FINAL_PAYMENT_PENDING` are represented by payment context/attempt state, not mutually exclusive booking states. `NO_PURCHASE` is a visit outcome, and `COMPLETED` needs an approved definition before becoming a final business state. This avoids treating a no-purchase visit awaiting returns or a concluded visit with reconciliation work as fully settled.
+D-27 now uses `PAYMENT_PENDING` specifically for pre-visit booking acceptance, alongside authoritative payment context/attempt state. `FINAL_PAYMENT_PENDING` remains a later purchase/payment concern. `NO_PURCHASE` is a visit outcome, and `COMPLETED` needs an approved definition before becoming a final business state.
 
 Forbidden examples:
 

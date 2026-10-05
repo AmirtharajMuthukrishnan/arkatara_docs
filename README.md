@@ -12,6 +12,8 @@ Task 4 is in progress as [cross-app model completion](docs/TASKS.md#4-cross-app-
 
 The [2026-10-03 model checkpoint](docs/reviews/TASK4_MODEL_FOUNDATION_2026-10-03.md) records the first implemented identity/booking/assignment models and verification. Task 4 remains incomplete; existing data and migration history have not been reset.
 
+The [2026-10-04 checkout extension](docs/reviews/TASK4_CHECKOUT_MODELS_2026-10-04.md) adds D-27 guest browser sessions/scoped grants, separate recovery proof, sealed selections, payment-start stock reservations and upfront payment/notification/outbox evidence. The [annotated reference](docs/ALL_BACKEND_MODELS_REFERENCE.md) now covers all 44 registered project models. Checkout APIs, authentication services, workers and external integrations remain later tasks; the remaining Task 4 matrix is explicit.
+
 ## Repository boundaries
 
 The workspace has three independent Git repositories:

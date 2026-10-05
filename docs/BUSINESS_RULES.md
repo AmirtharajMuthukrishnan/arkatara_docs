@@ -1,7 +1,7 @@
 # Business rules
 
 Status: Approved business invariants and explicit roadmap requirements; settings and unresolved policies remain open\
-Updated: 2026-10-03
+Updated: 2026-10-04
 
 This is the canonical rule reference. Read [DECISIONS.md](DECISIONS.md) before interpreting any example as policy.
 
@@ -77,6 +77,8 @@ The additional identity/booking rules below were approved through D-23–D-25 on
 | R-36 | Verify a booking/phone/purpose-bound OTP before initiating upfront payment or confirming the booking. Keep booking verification separate from Arrival OTP and account login/recovery. Phone changes invalidate proof; expiry, attempt limits and atomic single use apply. OTP is channel-control evidence, not permanent identity, KYC or automatic legal liability. |
 | R-37 | Customer identity/authentication support is prepared before launch but signup/login/account checkout remain disabled server-side until explicit readiness approval. Permanent guest access is booking-specific, not phone-based order lookup. Recycled-number recovery and historical account-data disclosure must be addressed before customer activation. |
 | R-38 | Staff APIs use `/staff/api/v1/` and a dedicated staff host under D-23. Explicit principal type, action permissions and assignment/market/hub scope protect operations; host/path separation or `IsAuthenticated` alone is insufficient. Staff MFA is a live-readiness requirement; customer credentials never authorize staff actions. |
+| R-39 | Guest booking tracking is mandatory. An anonymous browser credential authorizes only its explicit booking grants; no phone-history lookup, customer linkage or single localStorage order overwrite. Recovery is booking-specific and uses separate fresh verification. Session/access expiry never deletes transaction history. See D-27. |
+| R-40 | Draft/OTP actions do not reserve stock. Explicit payment initiation acquires the complete eligible selection transactionally. Capture uncertainty retains protection until reconciliation; late payment does not restore released stock. Reservation durations and commercial failure/refund treatment remain configuration/review gates. See D-27. |
 
 ## CONFIGURABLE RULE: values and scopes
 
@@ -88,7 +90,7 @@ The additional identity/booking rules below were approved through D-23–D-25 on
 | Box/item limits | Change limits without schema changes or frontend literals | BD-03, BD-13; two boxes and three/five pieces are not defaults |
 | Deposit amount and applicability | Separate configured offering from actual collection/application/refund evidence | BD-01, CA-01 |
 | Cart expiry | Configurable local retention; expired selections never reserve stock | BD-13; seven days is only a suggestion |
-| Reservation timeouts | Configurable duration and explicit accepted/released/expired facts | BD-02; exact trigger and late-payment response open |
+| Reservation timeouts | Configurable duration and explicit accepted/released/expired facts; payment-start trigger under R-40 | BD-02; duration and late-payment response open |
 | Pricing and tax | Support pricing modes and effective-dated tax configuration with immutable transaction snapshots | BD-04, CA-02; no GST percentage or weight formula selected |
 | OTP/security and provider settings | Configure reviewed challenge limits, retry/fallback settings and environment-specific credentials | BD-15, LR-04; never put secrets in public frontend configuration |
 
@@ -99,7 +101,7 @@ Changing policy configuration requires authorization and audit evidence. Applica
 The authoritative questions and status are in [DECISIONS.md](DECISIONS.md). This index groups them without supplying answers.
 
 - Upfront collection amount/basis/classification and outcomes: BD-01 partially resolved by D-25; accounting/tax remains CA-01.
-- Booking commitment, reservations, expiry and late payments: BD-02 partially resolved by D-25; verified upfront collection is required, stock-hold and exception policies remain open.
+- Booking commitment, reservations, expiry and late payments: BD-02 partially resolved by D-25/D-27; verified upfront collection and payment-start holds are required; timeout and exception policies remain open.
 - Plan quantities, variants, repeated-category boxes, mixed metals and substitutions: BD-03.
 - Price commitment and Gold pricing: BD-04.
 - Pending payment, retries, changed selection and physical handover: BD-05; pilot methods: BD-06.

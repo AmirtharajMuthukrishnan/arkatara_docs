@@ -1,7 +1,7 @@
 # Business context
 
 Status: APPROVED BUSINESS CONTEXT; D-23–D-26 update identity, booking and model-first sequencing; implementation and policy gates remain explicit\
-Updated: 2026-10-03
+Updated: 2026-10-04
 
 This is the canonical business narrative for both repositories. Binding rules live in [BUSINESS_RULES.md](BUSINESS_RULES.md); finalized decisions, unresolved questions and source reconciliation live in [DECISIONS.md](DECISIONS.md). Technical proposals do not silently resolve commercial, accounting or legal questions.
 
@@ -55,7 +55,7 @@ Multiple boxes do not imply multiple independent checkouts. They do not decide t
 1. The customer browses the selected city's available catalogue without logging in.
 2. The customer builds category-specific Trial Boxes. Local browser persistence preserves temporary selections; it does not reserve stock.
 3. A pending booking attempt supplies minimal name/mobile/address/PIN information. The backend revalidates eligibility, serviceability, prices, plan rules and inventory. Verify a booking-specific phone OTP and record applicable details/terms before initiating upfront payment.
-4. Confirm only after trusted backend payment verification and valid booking/inventory acceptance. Amount/classification, reservation timing, expiry and late-payment/refund outcomes remain gated; payment alone cannot revive expired stock commitments. This booking OTP is distinct from Arrival OTP.
+4. Under D-27, the explicit payment-start action acquires temporary inventory holds, after booking OTP; draft/OTP actions hold nothing. Confirm only after trusted captured-payment evidence and valid booking/inventory acceptance. Amount/classification, hold duration and late-payment/refund outcomes remain gated; payment alone cannot revive expired stock commitments. This booking OTP is distinct from Arrival OTP.
 5. Operations prepares and dispatches jewellery with appropriate movement documentation.
 6. An assigned, authenticated agent attends the visit. The customer receives an Arrival OTP; the agent enters it and backend verification starts the in-person trial.
 7. The customer tries pieces and selects what to purchase. The agent records the selection and the backend calculates the payable amount. There is no second selection/purchase OTP.
@@ -65,6 +65,8 @@ Multiple boxes do not imply multiple independent checkouts. They do not decide t
 A visit's progress, a purchase, payment, invoice issuance and return/QC completion are separate facts. Completing one does not prove the others complete.
 
 ## Identity and guest privacy
+
+D-27 makes guest booking tracking mandatory through a secure anonymous browser session with individual booking grants. Several bookings can remain accessible after refresh without creating a customer account. Loss/expiry of browser access uses a booking-specific recovery link plus separate fresh verification; it never turns a phone number into a history lookup. The 2026-10-04 Task 4 implementation supplies this persistence and checkout/payment evidence, not working HTTP sessions or gateway integrations.
 
 Staff use separately provisioned StaffUser identities, Django Admin and a dedicated staff portal/API. Registered customers use a separate CustomerAccount and authentication boundary; no shared customer/staff privilege table is planned. The requested staff host is `staff.arkatara.com` with `/staff/api/v1/`; public `arkatara.in` remains the intended storefront domain. Ownership, aliases and deployment/cookie topology must be verified before launch (D-23).
 

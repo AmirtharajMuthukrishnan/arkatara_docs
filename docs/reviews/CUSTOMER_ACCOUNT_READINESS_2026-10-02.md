@@ -2,6 +2,8 @@
 
 Reviewed: 2026-10-02.
 
+Implementation follow-up, 2026-10-04: D-27 adds guest browser sessions/scoped grants, separate recovery proof, selections/reservations and upfront payment evidence. See [current checkpoint](TASK4_CHECKOUT_MODELS_2026-10-04.md). The reviewed commit and observations below remain historical; customer authentication is still not implemented or enabled.
+
 Decision alignment updated: 2026-10-03. **Superseded recommendations:** the original review proposed reusing StaffUser for customers and optionally claiming guest orders. Those proposals were not implemented and are replaced by [D-23–D-26](../DECISIONS.md#d-23--separate-staff-and-customer-identities-with-permanent-guest-checkout): separate CustomerAccount, permanently unlinked guest bookings, booking phone OTP before upfront payment, and all agreed persistence in Task 4. Evidence and test results below describe the original reviewed commit, not verification of these new requirements. The guidance below is aligned with the selected direction; the supersession record preserves the earlier recommendation history.
 
 Implementation follow-up, 2026-10-03: the first CustomerAccount/draft booking/OTP evidence/guest grant/policy acceptance/assignment models and their database protections are now coded and tested. See the [separate foundation record](TASK4_MODEL_FOUNDATION_2026-10-03.md). This dated review is preserved as an earlier assessment; neither its old test evidence nor the new model tests establish customer authentication or full Task 4 completion.

@@ -1,7 +1,7 @@
 # Compliance and finance
 
 Status: Software requirements and proposed evidence design for owner review; no compliance certification\
-Updated: 2026-10-03
+Updated: 2026-10-04
 
 This document defines what the software must preserve and support. It does not decide the business's tax position or certify legal compliance. Open questions retain the BUSINESS DECISION, CA REVIEW and LEGAL REVIEW labels in [DECISIONS.md](DECISIONS.md).
 
@@ -101,6 +101,10 @@ Retain dispatch and return evidence even if there is no purchase. Dispatch docum
 CA REVIEW CA-02 and LEGAL REVIEW LR-03 determine the production format, required fields, issue timing, copy/transport requirements, applicability and any additional movement/product obligations. This document does not conclude whether multiple same-city hubs can fulfil one visit; BD-08 remains open.
 
 ## Payment confirmation and traceability
+
+Implemented persistence, 2026-10-04 (D-27): BookingCharge preserves the quoted/accepted amount, explicit currency, payee snapshot and policy reference/snapshot. PaymentContext/Attempt preserve intended collection; GatewayTransaction records immutable authorization/capture facts; PaymentAllocation applies captured money under locked receipt/obligation limits. A capture is not revenue recognition, a jewellery invoice or bank settlement. The term BookingCharge deliberately leaves deposit/fee classification open. Refund, sale application, settlement, bank matching and invoice persistence still need the remaining Task 4 scope.
+
+Late, duplicate and extra money must be distinguished: duplicate event/transaction identity is rejected; a distinct real receipt is retained, including after booking expiry. It cannot restore released inventory or allocate to a closed context. Commercial refund/reconciliation treatment remains BD-01/BD-02 and CA/LR review. These model tests use fictional provider facts, not live verified financial events.
 
 The backend must calculate amounts and bind collection to its booking/purchase purpose, expected amount, currency, entity/provider account and an identifiable payment context.
 
