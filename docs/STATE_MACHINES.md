@@ -1,10 +1,22 @@
 # Proposed state machines
 
-Status: TASK 3'S GATED ONBOARDING TRANSITIONS IMPLEMENTED; D-27 PRE-VISIT CHECKOUT STATE STORAGE IMPLEMENTED, later detailed state machines remain proposals. Updated: 2026-10-04. Task 4 owns persistence/constraints and model tests; Tasks 6–9 implement the corresponding transitions/providers. Target tables are not implementation evidence.
+Status: TASK 3'S GATED ONBOARDING TRANSITIONS IMPLEMENTED; D-27 PRE-VISIT CHECKOUT STATE STORAGE IMPLEMENTED, later detailed state machines remain proposals. D-29 MARKETPLACE TRANSITIONS AWAIT REFACTOR. Updated: 2026-10-18. Task 4 owns persistence/constraints and model tests; Tasks 6–9 implement the corresponding transitions/providers. Target tables are not implementation evidence.
 
 Except for the explicitly marked Task 3 subset and D-27 checkout storage, state names, transition shapes and mechanisms below are **PROPOSALS**. Approved invariants are binding; unanswered policy choices are not. A transition described as allowed means structurally permitted **only when every stated guard is satisfied and its BUSINESS DECISION, CA REVIEW or LEGAL REVIEW gate has been resolved for that behavior**. An unresolved gate is not an instruction to choose a default. Referenced unresolved IDs retain their status in [DECISIONS.md](DECISIONS.md).
 
+## Re-review continuation, 2026-10-10
+
+See the [re-review record](reviews/TASK4_REREVIEW_CORRECTIONS_2026-10-10.md) for attributed same-visit predispatch reassignment, CLOSED_BEFORE_DISPATCH/NEVER_DISPATCHED hub-only release, immutable outcome correction history and source-linked balance funding. The visit's original outcome and collected money remain historical facts; corrections do not automatically authorize sale, cancellation or refund. Zero final balance retains an obligation/document target without a new collection context; its internal COLLECTED state and purchase CONFIRMED state must commit together. An interruption rolls back collection so a void selection can still return through physical receipt/QC. Post-dispatch transfer and post-departure fulfilment remain provisional capability gates under BD-05/BD-07.
+
+## Implemented review continuation, 2026-10-07
+
+The [correction record](reviews/TASK4_FINDING_FIXES_2026-10-07.md) extends the dated D-27 checkpoint below with safe exception resolution, nullable unmatched receipts/later matching, final purchase obligations and normal combined-visit/custody/sale/return-QC persistence. `HomeVisit` tracks progression separately from accepted `TrialBooking`; committed reservations close only with preserved sale/QC disposition evidence. Physical observations and unit state commit together, and Arrival OTP remains mandatory. Document issuance seals historical headers and line sets. These are storage transitions, without operational APIs/providers or business/tax/legal defaults. Later exceptional/revisit/pre-dispatch cancellation/after-sale outcomes remain gated. See the current coverage matrix and handoff for unfinished scope and verification.
+
 ## Separate facts, common transition discipline
+
+[D-33](DECISIONS.md#d-33--immediate-trial-orders-and-configurable-weighted-upfront-pricing) selects immediate trial orders without future slots/rescheduling. Retain intent/payment/acceptance and actual dispatch/visit/return states; the internal booking record is not an appointment. Quote/cart recalculation does not hold stock. Payment-start holds and uncertain-capture reconciliation remain required, without a selected timeout. Versioned metric/weight updates affect new quotes, not accepted amounts or old evidence; exact fee arithmetic/display/acceptance remains pending.
+
+Marketplace transition, approved 2026-10-18: [D-29](DECISIONS.md#d-29--marketplace-sellers-platform-funded-purchase-benefit-and-combined-visits) retains one combined visit while introducing seller-specific financial evidence and platform-funded purchase benefits. Existing transitions below describe earlier implementation/proposals; they do not yet implement that arrangement. Remaining identity/OTP, benefit-allocation, payment, exception and professional/provider decisions must be reconciled before dependent guards are changed. History, reconciliation and physical-return/QC protections remain required.
 
 Use distinct state/evidence for booking/visit progress, reservation, physical custody/condition, purchase selection/confirmation, payment, invoice issuance, refund and notification delivery. A single `COMPLETED` flag cannot reliably describe all of these.
 
@@ -53,7 +65,7 @@ The guest local cart is not a DRAFT booking and never reserves inventory. A pers
 | DRAFT or CONFIRMATION_PENDING | CANCELLED | Explicit cancellation/expiry decision and safe release of relevant un-dispatched commitments under approved policy. Receipt/refund evidence remains. | BUSINESS DECISION BD-01, BD-02, BD-07. |
 | CONFIRMED, PREPARING or READY_FOR_DISPATCH | CANCELLED | Authorized cancellation with unit-by-unit recovery/unpacking/disposition; no automatic stock availability if an inspection is required. | BUSINESS DECISION BD-01, BD-02, BD-07, BD-09. |
 
-This is a proposed straight-through path. Rescheduling, re-packing and an exceptional repeat/split visit require an explicit transition design after BD-07/BD-08/BD-09, preserving earlier attempts and assignments. Do not implement an arbitrary backward status edit to approximate these cases. A cancellation request after dispatch is an operational event needing a reviewed visit/recovery outcome; it cannot erase the actual dispatch or release stock as if it remained at the hub.
+This is a proposed straight-through path for the immediate trial order. Future scheduling/rescheduling is excluded by D-33. Re-packing and exceptional failed/repeat/split visit handling still require explicit review under BD-07/BD-08/BD-09, preserving attempts and assignments. Do not use arbitrary backward status edits. A cancellation request after dispatch needs its reviewed visit/recovery outcome; it cannot erase dispatch or release stock as if it remained at the hub.
 
 Track `trial_outcome` independently, with candidate values such as unset, selected-for-purchase, no-purchase, failed-visit or aborted. A selection is still not a financially confirmed purchase. Proposed purchase/return/financial completion projections should identify outstanding work before presenting any overall completion indicator.
 

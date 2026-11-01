@@ -1,6 +1,6 @@
 # All Backend Models: Annotated Reference
 
-Snapshot: 2026-10-04, working tree. 44 project-defined concrete models.
+Snapshot: 2026-10-10, working tree. 60 project-defined concrete models.
 
 **Reference only. Do not import or run the copied source.** Models remain in their owning apps; the Django registry supplies all fields, including inherited fields. Source blocks preserve code/comments. Customer authentication, HTTP checkout, workers and providers providers are not implemented by these definitions.
 
@@ -8,16 +8,16 @@ D-27 extends TrialBooking through paid confirmation. GuestBrowserSession owns to
 
 ## Reading Map
 
-- [accounts](#app-accounts): [StaffUser](#model-accounts-staffuser), [CustomerAccount](#model-accounts-customeraccount)
+- [accounts](#app-accounts): [StaffScopeGrant](#model-accounts-staffscopegrant), [StaffUser](#model-accounts-staffuser), [CustomerAccount](#model-accounts-customeraccount)
 - [trials](#app-trials): [TrialBooking](#model-trials-trialbooking), [TrialBox](#model-trials-trialbox), [BookingPhoneChallenge](#model-trials-bookingphonechallenge), [GuestBookingAccessGrant](#model-trials-guestbookingaccessgrant), [BookingPolicyAcceptance](#model-trials-bookingpolicyacceptance), [GuestBrowserSession](#model-trials-guestbrowsersession), [GuestBookingRecoveryGrant](#model-trials-guestbookingrecoverygrant), [GuestRecoveryPhoneChallenge](#model-trials-guestrecoveryphonechallenge), [TrialPlanRevision](#model-trials-trialplanrevision), [TrialBoxItem](#model-trials-trialboxitem), [TrialItemAllocation](#model-trials-trialitemallocation), [IdempotencyRecord](#model-trials-idempotencyrecord)
-- [delivery](#app-delivery): [DeliveryAssignment](#model-delivery-deliveryassignment), [ArrivalOTP](#model-delivery-arrivalotp)
+- [delivery](#app-delivery): [HomeVisit](#model-delivery-homevisit), [VisitEvidence](#model-delivery-visitevidence), [ReservationCustodyEvent](#model-delivery-reservationcustodyevent), [DeliveryAssignment](#model-delivery-deliveryassignment), [ArrivalOTP](#model-delivery-arrivalotp)
 - [markets](#app-markets): [Market](#model-markets-market), [Hub](#model-markets-hub), [ServiceArea](#model-markets-servicearea)
 - [catalog](#app-catalog): [Material](#model-catalog-material), [Purity](#model-catalog-purity), [Category](#model-catalog-category), [Product](#model-catalog-product), [ProductVariant](#model-catalog-productvariant), [CSVImportBatch](#model-catalog-csvimportbatch), [ProductMedia](#model-catalog-productmedia), [PriceRevision](#model-catalog-pricerevision), [StorefrontPage](#model-catalog-storefrontpage)
 - [inventory](#app-inventory): [InventoryReservation](#model-inventory-inventoryreservation), [InventoryUnit](#model-inventory-inventoryunit), [InventoryMovement](#model-inventory-inventorymovement)
 - [compliance](#app-compliance): [PolicyDocumentRevision](#model-compliance-policydocumentrevision), [LegalEntity](#model-compliance-legalentity), [BusinessConfiguration](#model-compliance-businessconfiguration), [AuditEvent](#model-compliance-auditevent)
-- [payments](#app-payments): [BookingCharge](#model-payments-bookingcharge), [PaymentContext](#model-payments-paymentcontext), [PaymentAttempt](#model-payments-paymentattempt), [GatewayEvent](#model-payments-gatewayevent), [GatewayTransaction](#model-payments-gatewaytransaction), [PaymentAllocation](#model-payments-paymentallocation)
+- [payments](#app-payments): [BookingCharge](#model-payments-bookingcharge), [PaymentContext](#model-payments-paymentcontext), [PaymentAttempt](#model-payments-paymentattempt), [GatewayEvent](#model-payments-gatewayevent), [GatewayTransaction](#model-payments-gatewaytransaction), [PaymentAllocation](#model-payments-paymentallocation), [PaymentResolution](#model-payments-paymentresolution), [GatewayTransactionMatch](#model-payments-gatewaytransactionmatch), [PaymentResolutionReceipt](#model-payments-paymentresolutionreceipt)
 - [notifications](#app-notifications): [NotificationEvent](#model-notifications-notificationevent), [NotificationAttempt](#model-notifications-notificationattempt), [OutboxCommand](#model-notifications-outboxcommand)
-- [billing](#app-billing): No concrete models yet.
+- [billing](#app-billing): [TaxEvidence](#model-billing-taxevidence), [Purchase](#model-billing-purchase), [PurchaseBalanceEvidence](#model-billing-purchasebalanceevidence), [UpfrontApplication](#model-billing-upfrontapplication), [PurchaseItem](#model-billing-purchaseitem), [PurchaseObligation](#model-billing-purchaseobligation), [DocumentSeries](#model-billing-documentseries), [FinancialDocument](#model-billing-financialdocument), [FinancialDocumentLine](#model-billing-financialdocumentline)
 - [analytics](#app-analytics): No concrete models yet.
 
 ## Field Interpretation
@@ -27,6 +27,38 @@ UUIDs and idempotency keys identify records/actions; they do not grant access. N
 <a id="app-accounts"></a>
 
 ## accounts
+
+<a id="model-accounts-staffscopegrant"></a>
+
+### StaffScopeGrant
+
+**Table:** `accounts_staffscopegrant`. **Source:** [accounts/scope.py](../arkatara_backend/accounts/scope.py).
+
+One action in a market, optionally restricted to one hub, with revocation evidence.
+
+This record never substitutes for active staff/MFA/current visit assignment.
+Refs: BUSINESS_RULES.md R-30, R-33, R-38; DECISIONS.md D-23.
+
+| Field | Type / relationship | Null / blank | Default / generated value | Explanation |
+| --- | --- | --- | --- | --- |
+| `id` | BigAutoField; PK | no / allowed | `No declared default` | Stored id; see model guards below. |
+| `created_at` | DateTimeField | no / allowed | `auto_now_add` | Stored created at; see model guards below. |
+| `updated_at` | DateTimeField | no / allowed | `auto_now` | Stored updated at; see model guards below. |
+| `public_id` | UUIDField(32); unique | no / required | `uuid.uuid4` | Stored public id; see model guards below. |
+| `staff` | ForeignKey -> accounts.StaffUser; PROTECT | no / required | `No declared default` | Stored staff; see model guards below. |
+| `permission` | ForeignKey -> auth.Permission; PROTECT | no / required | `No declared default` | Stored permission; see model guards below. |
+| `market` | ForeignKey -> markets.Market; PROTECT | no / required | `No declared default` | Stored market; see model guards below. |
+| `hub` | ForeignKey -> markets.Hub; PROTECT | yes / allowed | `No declared default` | Stored hub; see model guards below. |
+| `granted_by` | ForeignKey -> accounts.StaffUser; PROTECT | no / required | `No declared default` | Stored granted by; see model guards below. |
+| `granted_at` | DateTimeField | no / required | `No declared default` | Stored granted at; see model guards below. |
+| `reason` | TextField | no / required | `No declared default` | Stored reason; see model guards below. |
+| `revoked_at` | DateTimeField | yes / allowed | `No declared default` | Stored revoked at; see model guards below. |
+| `revoked_by` | ForeignKey -> accounts.StaffUser; PROTECT | yes / allowed | `No declared default` | Stored revoked by; see model guards below. |
+| `revocation_reason` | TextField | no / allowed | `No declared default` | Stored revocation reason; see model guards below. |
+
+**Explicit Meta constraints:** `staff_scope_revocation`
+
+**Explicit Meta indexes:** None declared; field/FK and SQL guards may still apply.
 
 <a id="model-accounts-staffuser"></a>
 
@@ -101,6 +133,8 @@ from django.db import models
 from common.evidence import RetainedModel
 from common.verification import validate_observed_at
 
+from .scope import StaffScopeGrant  # noqa: F401
+
 
 class StaffUser(AbstractUser):
     """Staff identity leaves guest browsing and booking free of a login requirement.
@@ -159,6 +193,68 @@ class CustomerAccount(RetainedModel):
         return str(self.public_id)
 ```
 
+### Source: accounts/scope.py
+
+Source of truth: [accounts/scope.py](../arkatara_backend/accounts/scope.py).
+
+```python
+"""Explicit operational scope evidence; endpoints must still authorize each action."""
+
+from django.conf import settings
+from django.db import models
+from django.db.models import F, Q
+
+from common.persistence import LifecycleModel
+from common.verification import validate_observed_at
+
+
+class StaffScopeGrant(LifecycleModel):
+    """One action in a market, optionally restricted to one hub, with revocation evidence.
+
+    This record never substitutes for active staff/MFA/current visit assignment.
+    Refs: BUSINESS_RULES.md R-30, R-33, R-38; DECISIONS.md D-23.
+    """
+
+    staff = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="operational_scope_grants"
+    )
+    permission = models.ForeignKey("auth.Permission", on_delete=models.PROTECT)
+    market = models.ForeignKey("markets.Market", on_delete=models.PROTECT)
+    hub = models.ForeignKey("markets.Hub", null=True, blank=True, on_delete=models.PROTECT)
+    granted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="made_scope_grants"
+    )
+    granted_at = models.DateTimeField(validators=[validate_observed_at])
+    reason = models.TextField()
+    revoked_at = models.DateTimeField(null=True, blank=True, validators=[validate_observed_at])
+    revoked_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="revoked_scope_grants",
+    )
+    revocation_reason = models.TextField(blank=True)
+    mutable_fields = ("revoked_at", "revoked_by_id", "revocation_reason")
+    write_once_fields = mutable_fields
+
+    class Meta(LifecycleModel.Meta):
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(revoked_at__isnull=True, revoked_by__isnull=True, revocation_reason="")
+                | (
+                    Q(
+                        revoked_at__isnull=False,
+                        revoked_at__gte=F("granted_at"),
+                        revoked_by__isnull=False,
+                    )
+                    & ~Q(revocation_reason="")
+                ),
+                name="staff_scope_revocation",
+            )
+        ]
+```
+
 <a id="app-trials"></a>
 
 ## trials
@@ -190,8 +286,8 @@ Immutable guest/account identity and original contact/address snapshot. D-27 add
 | `request_fingerprint` | CharField(64) | no / required | `No declared default` | Digest of canonical request facts; it does not itself implement replay handling. |
 | `verified_phone_challenge` | OneToOneField -> trials.BookingPhoneChallenge; PROTECT; unique | yes / allowed | `No declared default` | Consumed OTP proof belonging to this exact booking. |
 | `verification_valid_until` | DateTimeField | yes / allowed | `No declared default` | Deadline for initiating payment using this phone proof. |
-| `sealed_at` | DateTimeField | yes / allowed | `No declared default` | Seals the completed box/item/acceptance graph against additional selections. |
-| `confirmed_at` | DateTimeField | yes / allowed | `No declared default` | Time booking confirmation met payment and inventory guards. |
+| `sealed_at` | DateTimeField | yes / allowed | `No declared default` | Seals authoritative selections and required historical evidence. |
+| `confirmed_at` | DateTimeField | yes / allowed | `No declared default` | Time confirmation met the owning model's evidence guards. |
 | `acceptance_snapshot` | JSONField | no / allowed | `builtins.dict` | Copied acceptance facts; requires actual policy evidence. |
 
 **Explicit Meta constraints:** `booking_checkout_owner_valid`, `booking_status_valid`, `booking_verification_required`, `booking_confirmation_time`, `booking_contact_required`
@@ -413,11 +509,12 @@ configuration and its effective scope. Refs: BUSINESS_RULES.md R-28; BD-03, BD-1
 | `market` | ForeignKey -> markets.Market; PROTECT | no / required | `No declared default` | Stored market; see model guards below. |
 | `category` | ForeignKey -> catalog.Category; PROTECT | no / required | `No declared default` | Stored category; see model guards below. |
 | `policy_revision` | ForeignKey -> compliance.BusinessConfiguration; PROTECT | no / required | `No declared default` | Stored policy revision; see model guards below. |
+| `policy_scope_version` | PositiveSmallIntegerField | no / required | `2` | Identity contract: legacy 1 uses codes; new 2 uses public UUIDs. |
 | `policy_snapshot` | JSONField | no / required | `No declared default` | Historical policy facts; this JSON alone does not establish approval. |
 | `effective_from` | DateTimeField | no / required | `No declared default` | Stored effective from; see model guards below. |
 | `effective_until` | DateTimeField | yes / allowed | `No declared default` | Stored effective until; see model guards below. |
 
-**Explicit Meta constraints:** `trial_plan_revision_unique`, `trial_plan_version_positive`, `trial_plan_effective_window`
+**Explicit Meta constraints:** `trial_plan_revision_unique`, `trial_plan_version_positive`, `plan_policy_scope_version`, `trial_plan_effective_window`
 
 **Explicit Meta indexes:** None declared; field/FK and SQL guards may still apply.
 
@@ -516,6 +613,7 @@ from django.utils import timezone
 from common.evidence import AppendOnlyModel
 from common.persistence import LifecycleModel, expiry_constraints
 from common.verification import VerificationChallenge, digest_validator, validate_observed_at
+from compliance.configuration import validate_policy_binding
 
 
 class GuestBrowserSession(LifecycleModel):
@@ -644,6 +742,9 @@ class TrialPlanRevision(AppendOnlyModel):
     policy_revision = models.ForeignKey(
         "compliance.BusinessConfiguration", on_delete=models.PROTECT
     )
+    # Technical identity version preserves old scopes without rewriting policy history.
+    # Refs: BUSINESS_RULES.md R-07, R-28.
+    policy_scope_version = models.PositiveSmallIntegerField(default=2)
     policy_snapshot = models.JSONField()
     effective_from = models.DateTimeField()
     effective_until = models.DateTimeField(null=True, blank=True)
@@ -655,11 +756,28 @@ class TrialPlanRevision(AppendOnlyModel):
             ),
             models.CheckConstraint(condition=Q(version__gt=0), name="trial_plan_version_positive"),
             models.CheckConstraint(
+                condition=Q(policy_scope_version__in=[1, 2]), name="plan_policy_scope_version"
+            ),
+            models.CheckConstraint(
                 condition=Q(effective_until__isnull=True)
                 | Q(effective_until__gt=F("effective_from")),
                 name="trial_plan_effective_window",
             ),
         ]
+
+    def clean(self):
+        super().clean()
+        if self._state.adding and self.policy_scope_version != 2:
+            raise ValidationError("New policy bindings require public UUID scope identifiers.")
+        if self.policy_revision_id and self.market_id and self.category_id:
+            validate_policy_binding(
+                self.policy_revision,
+                "trials",
+                "plan-policy-reference",
+                market=self.market,
+                category=self.category,
+                scope_version=self.policy_scope_version,
+            )
 
 
 class TrialBoxItem(AppendOnlyModel):
@@ -1087,6 +1205,17 @@ class GuestBookingAccessGrant(RetainedModel):
             or self.expires_at > self.browser_session.expires_at
         ):
             raise ValidationError("Grant validity must stay within its browser session.")
+        # Issuance cannot revive revoked/expired browser authority. Refs: R-39; D-27.
+        if (
+            self._state.adding
+            and self.browser_session_id
+            and (
+                self.browser_session.revoked_at is not None
+                or self.browser_session.expires_at <= timezone.now()
+                or self.expires_at <= timezone.now()
+            )
+        ):
+            raise ValidationError("New grants require a live browser session.")
 
     def validate_existing_identity(self, previous):
         super().validate_existing_identity(previous)
@@ -1129,6 +1258,104 @@ from .checkout import (  # noqa: E402, F401
 <a id="app-delivery"></a>
 
 ## delivery
+
+<a id="model-delivery-homevisit"></a>
+
+### HomeVisit
+
+**Table:** `delivery_homevisit`. **Source:** [delivery/visits.py](../arkatara_backend/delivery/visits.py).
+
+One normal combined visit; arrival uses the existing single-purpose challenge.
+
+Scheduling/revisit policies remain BD-07. Evidence does not authorize dispatch.
+Refs: BUSINESS_RULES.md R-02, R-20, R-21, R-30; DECISIONS.md BD-07, BD-09.
+
+| Field | Type / relationship | Null / blank | Default / generated value | Explanation |
+| --- | --- | --- | --- | --- |
+| `id` | BigAutoField; PK | no / allowed | `No declared default` | Stored id; see model guards below. |
+| `created_at` | DateTimeField | no / allowed | `auto_now_add` | Stored created at; see model guards below. |
+| `updated_at` | DateTimeField | no / allowed | `auto_now` | Stored updated at; see model guards below. |
+| `public_id` | UUIDField(32); unique | no / required | `uuid.uuid4` | Stored public id; see model guards below. |
+| `booking` | OneToOneField -> trials.TrialBooking; PROTECT; unique | no / required | `No declared default` | Stored booking; see model guards below. |
+| `assignment` | ForeignKey -> delivery.DeliveryAssignment; PROTECT | no / required | `No declared default` | Stored assignment; see model guards below. |
+| `status` | CharField(24) | no / required | `'PREPARING'` | Record lifecycle only; see state guards and workflow boundaries. Choices: `PREPARING`, `READY`, `DISPATCHED`, `IN_PERSON_TRIAL`, `CONCLUDED`, `CLOSED_BEFORE_DISPATCH`. |
+| `dispatch_document` | ForeignKey -> billing.FinancialDocument; PROTECT | yes / allowed | `No declared default` | Stored dispatch document; see model guards below. |
+| `arrival_challenge` | OneToOneField -> delivery.ArrivalOTP; PROTECT; unique | yes / allowed | `No declared default` | Stored arrival challenge; see model guards below. |
+| `dispatched_at` | DateTimeField | yes / allowed | `No declared default` | Stored dispatched at; see model guards below. |
+| `trial_started_at` | DateTimeField | yes / allowed | `No declared default` | Stored trial started at; see model guards below. |
+| `concluded_at` | DateTimeField | yes / allowed | `No declared default` | Stored concluded at; see model guards below. |
+| `outcome` | CharField(32) | no / allowed | `No declared default` | Stored outcome; see model guards below. Choices: `SELECTED`, `NO_PURCHASE`, `FAILED_VISIT`, `ABORTED`. |
+| `current_evidence` | ForeignKey -> delivery.VisitEvidence; PROTECT | yes / allowed | `No declared default` | Latest visit observation; original assignment/outcome history remains. |
+
+**Explicit Meta constraints:** `visit_outcome_evidence`
+
+**Explicit Meta indexes:** None declared; field/FK and SQL guards may still apply.
+
+<a id="model-delivery-visitevidence"></a>
+
+### VisitEvidence
+
+**Table:** `delivery_visitevidence`. **Source:** [delivery/visits.py](../arkatara_backend/delivery/visits.py).
+
+Attributable visit progression, responsibility replacement and outcome corrections.
+
+An outcome correction never rewrites the initial observation or changes money/custody.
+The latest evidence and visit projection must commit together. No revisit is authorized.
+Refs: BUSINESS_RULES.md R-02, R-30; DECISIONS.md D-24, BD-07, BD-09.
+
+| Field | Type / relationship | Null / blank | Default / generated value | Explanation |
+| --- | --- | --- | --- | --- |
+| `id` | BigAutoField; PK | no / allowed | `No declared default` | Stored id; see model guards below. |
+| `public_id` | UUIDField(32); unique | no / required | `uuid.uuid4` | Stored public id; see model guards below. |
+| `recorded_at` | DateTimeField | no / allowed | `auto_now_add` | Stored recorded at; see model guards below. |
+| `visit` | ForeignKey -> delivery.HomeVisit; PROTECT | no / required | `No declared default` | Stored visit; see model guards below. |
+| `previous` | OneToOneField -> delivery.VisitEvidence; PROTECT; unique | yes / allowed | `No declared default` | Stored previous; see model guards below. |
+| `assignment` | ForeignKey -> delivery.DeliveryAssignment; PROTECT | no / required | `No declared default` | Stored assignment; see model guards below. |
+| `kind` | CharField(24) | no / required | `No declared default` | Stored kind; see model guards below. Choices: `STATE`, `REASSIGN`, `PREDISPATCH_CLOSE`, `OUTCOME_CORRECTION`. |
+| `status` | CharField(24) | no / required | `No declared default` | Record lifecycle only; see state guards and workflow boundaries. |
+| `outcome` | CharField(32) | no / allowed | `No declared default` | Stored outcome; see model guards below. |
+| `observed_at` | DateTimeField | no / required | `No declared default` | Stored observed at; see model guards below. |
+| `actor` | ForeignKey -> accounts.StaffUser; PROTECT | no / required | `No declared default` | Stored actor; see model guards below. |
+| `reason` | TextField | no / required | `No declared default` | Stored reason; see model guards below. |
+| `evidence_reference` | CharField(500) | no / required | `No declared default` | Stored evidence reference; see model guards below. |
+| `policy_snapshot` | JSONField | no / required | `No declared default` | Historical policy facts; this JSON alone does not establish approval. |
+| `idempotency_key` | UUIDField(32); unique | no / required | `uuid.uuid4` | Stored idempotency key; see model guards below. |
+
+**Explicit Meta constraints:** `visit_one_evidence_origin`
+
+**Explicit Meta indexes:** None declared; field/FK and SQL guards may still apply.
+
+<a id="model-delivery-reservationcustodyevent"></a>
+
+### ReservationCustodyEvent
+
+**Table:** `delivery_reservationcustodyevent`. **Source:** [delivery/visits.py](../arkatara_backend/delivery/visits.py).
+
+Append-only observed dispatch, receipt/QC, sale and exception facts.
+
+Releasing the commitment never changes physical stock to available by itself.
+Refs: BUSINESS_RULES.md R-14, R-15, R-16, R-17, R-30; DECISIONS.md BD-09, CA-02.
+
+| Field | Type / relationship | Null / blank | Default / generated value | Explanation |
+| --- | --- | --- | --- | --- |
+| `id` | BigAutoField; PK | no / allowed | `No declared default` | Stored id; see model guards below. |
+| `public_id` | UUIDField(32); unique | no / required | `uuid.uuid4` | Stored public id; see model guards below. |
+| `recorded_at` | DateTimeField | no / allowed | `auto_now_add` | Stored recorded at; see model guards below. |
+| `reservation` | ForeignKey -> inventory.InventoryReservation; PROTECT | no / required | `No declared default` | One exclusive physical-piece commitment; not a catalogue variant. |
+| `visit` | ForeignKey -> delivery.HomeVisit; PROTECT | no / required | `No declared default` | Stored visit; see model guards below. |
+| `previous` | OneToOneField -> delivery.ReservationCustodyEvent; PROTECT; unique | yes / allowed | `No declared default` | Stored previous; see model guards below. |
+| `kind` | CharField(24) | no / required | `No declared default` | Stored kind; see model guards below. Choices: `DISPATCH`, `RETURNING`, `HUB_RECEIPT`, `QC_PASS`, `QC_FAIL`, `SALE`, `EXCEPTION`, `NEVER_DISPATCHED`. |
+| `observed_at` | DateTimeField | no / required | `No declared default` | Stored observed at; see model guards below. |
+| `actor` | ForeignKey -> accounts.StaffUser; PROTECT | no / required | `No declared default` | Stored actor; see model guards below. |
+| `reason` | TextField | no / required | `No declared default` | Stored reason; see model guards below. |
+| `evidence_reference` | CharField(500) | no / required | `No declared default` | Stored evidence reference; see model guards below. |
+| `policy_snapshot` | JSONField | no / required | `No declared default` | Historical policy facts; this JSON alone does not establish approval. |
+| `purchase_item` | ForeignKey -> billing.PurchaseItem; PROTECT | yes / allowed | `No declared default` | Stored purchase item; see model guards below. |
+| `idempotency_key` | UUIDField(32); unique | no / required | `No declared default` | Stored idempotency key; see model guards below. |
+
+**Explicit Meta constraints:** `reservation_one_custody_origin`, `custody_sale_link`
+
+**Explicit Meta indexes:** None declared; field/FK and SQL guards may still apply.
 
 <a id="model-delivery-deliveryassignment"></a>
 
@@ -1206,6 +1433,8 @@ from django.db.models import F, Q
 
 from common.evidence import RetainedModel
 from common.verification import VerificationChallenge, validate_observed_at
+
+from .visits import HomeVisit, ReservationCustodyEvent, VisitEvidence  # noqa: F401
 
 
 class DeliveryAssignment(RetainedModel):
@@ -1288,6 +1517,244 @@ class ArrivalOTP(VerificationChallenge):
         super().clean()
         if self.assignment_id and self.phone != self.assignment.booking.contact_phone:
             raise ValidationError({"phone": "Arrival phone must match the assigned booking."})
+```
+
+### Source: delivery/visits.py
+
+Source of truth: [delivery/visits.py](../arkatara_backend/delivery/visits.py).
+
+```python
+"""Combined visit and observed physical custody evidence, without operational endpoints."""
+
+import uuid
+
+from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.db import models
+from django.db.models import Q
+
+from common.evidence import AppendOnlyModel
+from common.persistence import LifecycleModel
+from common.verification import validate_observed_at
+
+
+class HomeVisit(LifecycleModel):
+    """One normal combined visit; arrival uses the existing single-purpose challenge.
+
+    Scheduling/revisit policies remain BD-07. Evidence does not authorize dispatch.
+    Refs: BUSINESS_RULES.md R-02, R-20, R-21, R-30; DECISIONS.md BD-07, BD-09.
+    """
+
+    booking = models.OneToOneField(
+        "trials.TrialBooking", on_delete=models.PROTECT, related_name="visit"
+    )
+    assignment = models.ForeignKey("delivery.DeliveryAssignment", on_delete=models.PROTECT)
+    status = models.CharField(
+        max_length=24,
+        default="PREPARING",
+        choices=[
+            (s, s.replace("_", " ").title())
+            for s in (
+                "PREPARING",
+                "READY",
+                "DISPATCHED",
+                "IN_PERSON_TRIAL",
+                "CONCLUDED",
+                "CLOSED_BEFORE_DISPATCH",
+            )
+        ],
+    )
+    dispatch_document = models.ForeignKey(
+        "billing.FinancialDocument", null=True, blank=True, on_delete=models.PROTECT
+    )
+    arrival_challenge = models.OneToOneField(
+        "delivery.ArrivalOTP", null=True, blank=True, on_delete=models.PROTECT
+    )
+    dispatched_at = models.DateTimeField(null=True, blank=True, validators=[validate_observed_at])
+    trial_started_at = models.DateTimeField(
+        null=True, blank=True, validators=[validate_observed_at]
+    )
+    concluded_at = models.DateTimeField(null=True, blank=True, validators=[validate_observed_at])
+    outcome = models.CharField(
+        max_length=32,
+        blank=True,
+        choices=[
+            (s, s.replace("_", " ").title())
+            for s in ("SELECTED", "NO_PURCHASE", "FAILED_VISIT", "ABORTED")
+        ],
+    )
+    current_evidence = models.ForeignKey(
+        "VisitEvidence",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="current_for_visits",
+    )
+    mutable_fields = (
+        "status",
+        "dispatch_document_id",
+        "arrival_challenge_id",
+        "dispatched_at",
+        "trial_started_at",
+        "concluded_at",
+        "outcome",
+        "assignment_id",
+        "current_evidence_id",
+    )
+    write_once_fields = mutable_fields[1:7]
+    initial_status = "PREPARING"
+    transitions = {
+        "PREPARING": ("READY", "CLOSED_BEFORE_DISPATCH"),
+        "READY": ("DISPATCHED", "CLOSED_BEFORE_DISPATCH"),
+        "DISPATCHED": ("IN_PERSON_TRIAL", "CONCLUDED"),
+        "IN_PERSON_TRIAL": ("CONCLUDED",),
+    }
+
+    class Meta(LifecycleModel.Meta):
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(
+                    status__in=["CONCLUDED", "CLOSED_BEFORE_DISPATCH"],
+                    concluded_at__isnull=False,
+                )
+                & ~Q(outcome="")
+                | (
+                    ~Q(status__in=["CONCLUDED", "CLOSED_BEFORE_DISPATCH"])
+                    & Q(concluded_at__isnull=True, outcome="")
+                ),
+                name="visit_outcome_evidence",
+            )
+        ]
+
+    @property
+    def effective_outcome(self):
+        """Corrections retain the original outcome and expose separately observed evidence."""
+        return self.current_evidence.outcome if self.current_evidence_id else self.outcome
+
+    def validate_existing_identity(self, previous):
+        super().validate_existing_identity(previous)
+        if self.assignment_id != previous.assignment_id and (
+            previous.status not in ("PREPARING", "READY")
+            or previous.dispatched_at is not None
+            or previous.arrival_challenge_id is not None
+            or previous.custody_events.exists()
+        ):
+            # Reassignment preserves responsibility history; custody transfer is a later policy.
+            # Refs: BUSINESS_RULES.md R-02, R-30; DECISIONS.md BD-07, BD-09.
+            raise ValidationError({"assignment": "Dispatched visit responsibility cannot change."})
+
+
+class VisitEvidence(AppendOnlyModel):
+    """Attributable visit progression, responsibility replacement and outcome corrections.
+
+    An outcome correction never rewrites the initial observation or changes money/custody.
+    The latest evidence and visit projection must commit together. No revisit is authorized.
+    Refs: BUSINESS_RULES.md R-02, R-30; DECISIONS.md D-24, BD-07, BD-09.
+    """
+
+    visit = models.ForeignKey(HomeVisit, on_delete=models.PROTECT, related_name="evidence")
+    previous = models.OneToOneField(
+        "self", null=True, blank=True, on_delete=models.PROTECT, related_name="following"
+    )
+    assignment = models.ForeignKey("delivery.DeliveryAssignment", on_delete=models.PROTECT)
+    kind = models.CharField(
+        max_length=24,
+        choices=[
+            (s, s.replace("_", " ").title())
+            for s in (
+                "STATE",
+                "REASSIGN",
+                "PREDISPATCH_CLOSE",
+                "OUTCOME_CORRECTION",
+            )
+        ],
+    )
+    status = models.CharField(max_length=24)
+    outcome = models.CharField(max_length=32, blank=True)
+    observed_at = models.DateTimeField(validators=[validate_observed_at])
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    reason = models.TextField()
+    evidence_reference = models.CharField(max_length=500)
+    policy_snapshot = models.JSONField()
+    idempotency_key = models.UUIDField(default=uuid.uuid4, unique=True)
+
+    class Meta(AppendOnlyModel.Meta):
+        constraints = [
+            models.UniqueConstraint(
+                fields=["visit"],
+                condition=Q(previous__isnull=True),
+                name="visit_one_evidence_origin",
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        if not self.reason.strip() or not self.evidence_reference.strip():
+            raise ValidationError("Visit evidence requires a reason and supporting reference.")
+        if not isinstance(self.policy_snapshot, dict) or not self.policy_snapshot:
+            raise ValidationError({"policy_snapshot": "Retain the applicable evidence scope."})
+        if self.actor_id and not self.actor.is_active:
+            raise ValidationError({"actor": "New evidence requires an active staff identity."})
+        if self.assignment_id and self.visit_id:
+            if self.assignment.booking_id != self.visit.booking_id:
+                raise ValidationError({"assignment": "Responsibility must belong to this booking."})
+        if self.previous_id and self.previous.visit_id != self.visit_id:
+            raise ValidationError({"previous": "Evidence cannot switch visits."})
+
+
+class ReservationCustodyEvent(AppendOnlyModel):
+    """Append-only observed dispatch, receipt/QC, sale and exception facts.
+
+    Releasing the commitment never changes physical stock to available by itself.
+    Refs: BUSINESS_RULES.md R-14, R-15, R-16, R-17, R-30; DECISIONS.md BD-09, CA-02.
+    """
+
+    reservation = models.ForeignKey(
+        "inventory.InventoryReservation", on_delete=models.PROTECT, related_name="custody_events"
+    )
+    visit = models.ForeignKey(HomeVisit, on_delete=models.PROTECT, related_name="custody_events")
+    previous = models.OneToOneField(
+        "self", null=True, blank=True, on_delete=models.PROTECT, related_name="following"
+    )
+    kind = models.CharField(
+        max_length=24,
+        choices=[
+            (s, s.replace("_", " ").title())
+            for s in (
+                "DISPATCH",
+                "RETURNING",
+                "HUB_RECEIPT",
+                "QC_PASS",
+                "QC_FAIL",
+                "SALE",
+                "EXCEPTION",
+                "NEVER_DISPATCHED",
+            )
+        ],
+    )
+    observed_at = models.DateTimeField(validators=[validate_observed_at])
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    reason = models.TextField()
+    evidence_reference = models.CharField(max_length=500)
+    policy_snapshot = models.JSONField()
+    purchase_item = models.ForeignKey(
+        "billing.PurchaseItem", null=True, blank=True, on_delete=models.PROTECT
+    )
+    idempotency_key = models.UUIDField(unique=True)
+
+    class Meta(AppendOnlyModel.Meta):
+        constraints = [
+            models.UniqueConstraint(
+                fields=["reservation"],
+                condition=Q(previous__isnull=True),
+                name="reservation_one_custody_origin",
+            ),
+            models.CheckConstraint(
+                condition=Q(kind="SALE", purchase_item__isnull=False)
+                | (~Q(kind="SALE") & Q(purchase_item__isnull=True)),
+                name="custody_sale_link",
+            ),
+        ]
 ```
 
 <a id="app-markets"></a>
@@ -2367,6 +2834,9 @@ class PriceRevision(models.Model):
 
         database = kwargs.get("using") or router.db_for_write(type(self), instance=self)
         with transaction.atomic(using=database):
+            from common.serialization import lock_integrity_writes
+
+            lock_integrity_writes(database)
             if self.variant_id:
                 variant = (
                     ProductVariant.objects.using(database)
@@ -2429,7 +2899,12 @@ _publication_write = ContextVar("storefront_publication_write", default=False)
 
 
 def lock_page_tree(database="default"):
-    # Serialize hierarchy edits before taking page row locks, preventing concurrent cycles.
+    from common.serialization import lock_integrity_writes
+
+    # All callers own an atomic transaction. Match checkout's outer latch order
+    # before serializing hierarchy edits or taking page row locks, including Admin POSTs.
+    # Refs: BUSINESS_RULES.md R-14, R-30; DECISIONS.md D-20, D-27.
+    lock_integrity_writes(database)
     with connections[database].cursor() as cursor:
         cursor.execute("SELECT pg_advisory_xact_lock(%s)", [674805010404])
 
@@ -2597,6 +3072,9 @@ class StorefrontPage(ValidatedReferenceModel):
             raise ValidationError({"status": "New storefront content must start as a draft."})
         database = kwargs.get("using") or router.db_for_write(type(self), instance=self)
         with transaction.atomic(using=database):
+            from common.serialization import lock_integrity_writes
+
+            lock_integrity_writes(database)
             lock_page_tree(database)
             return super().save(*args, **kwargs)
 
@@ -2633,7 +3111,9 @@ Capture-pending holds cannot simply expire. Refs: R-08, R-14; D-27.
 | `committed_at` | DateTimeField | yes / allowed | `No declared default` | Time exclusive stock became committed against successful collection. |
 | `released_at` | DateTimeField | yes / allowed | `No declared default` | Stored released at; see model guards below. |
 | `release_reason` | CharField(255) | no / allowed | `No declared default` | Explicit release reason retained with time and reconciliation evidence. |
-| `resolution_reference` | CharField(255) | no / allowed | `No declared default` | Provider reconciliation evidence required before safe release. |
+| `resolution_reference` | CharField(255) | no / allowed | `No declared default` | Supplementary reference; linked resolution evidence is authoritative. |
+| `resolution` | ForeignKey -> payments.PaymentResolution; PROTECT | yes / allowed | `No declared default` | Attributable immutable provider reconciliation for this exact context. |
+| `disposition` | OneToOneField -> delivery.ReservationCustodyEvent; PROTECT; unique | yes / allowed | `No declared default` | Sale, receipt/QC or never-dispatched hub evidence closing a commitment. |
 
 **Explicit Meta constraints:** `one_live_reservation_per_unit`, `reservation_release_evidence`, `reservation_commit_time`, `reservation_capture_time`, `reservation_release_order`
 
@@ -2659,8 +3139,8 @@ Current lifecycle covers receipt and inspection only. Reservation, agent custody
 | `public_id` | UUIDField(32); unique | no / required | `uuid.uuid4` | Stable opaque public identity. It is an identifier, not an access credential. |
 | `variant` | ForeignKey -> catalog.ProductVariant; PROTECT | no / required | `No declared default` | Selectable specification associated with this unit or price revision. |
 | `hub` | ForeignKey -> markets.Hub; PROTECT | no / required | `No declared default` | Operational location identity, not legal stock ownership. |
-| `status` | CharField(16) | no / required | `InventoryUnit.Status.DRAFT` | Record lifecycle only; see state guards and workflow boundaries. Choices: `DRAFT`, `QC_PENDING`, `AVAILABLE`, `QUARANTINED`, `RETIRED`. |
-| `custody` | CharField(16) | no / required | `InventoryUnit.Custody.UNKNOWN` | Current implemented physical custody state; UNKNOWN/HUB only in this foundation. Choices: `UNKNOWN`, `HUB`. |
+| `status` | CharField(24) | no / required | `InventoryUnit.Status.DRAFT` | Record lifecycle only; see state guards and workflow boundaries. Choices: `DRAFT`, `QC_PENDING`, `AVAILABLE`, `OUT_FOR_DELIVERY`, `RETURNING_TO_HUB`, `SOLD`, `QUARANTINED`, `RETIRED`. |
+| `custody` | CharField(16) | no / required | `InventoryUnit.Custody.UNKNOWN` | Current implemented physical custody state; UNKNOWN/HUB only in this foundation. Choices: `UNKNOWN`, `HUB`, `AGENT`, `CUSTOMER`. |
 
 **Explicit Meta constraints:** `inventory_unit_status_valid`, `inventory_unit_custody_valid`, `available_unit_at_hub`
 
@@ -2685,11 +3165,11 @@ Reviewed stock services create this evidence atomically with stock changes; SQL 
 | `unit` | ForeignKey -> inventory.InventoryUnit; PROTECT | no / required | `No declared default` | Protected identity of the exact physical piece whose movement is recorded. |
 | `action` | CharField(16) | no / required | `No declared default` | Observed inventory operation or audit action, depending on the owning model. Choices: `REGISTER`, `RECEIVE`, `QC_PASS`, `QC_FAIL`. |
 | `from_status` | CharField(16) | no / allowed | `No declared default` | State before the recorded inventory operation. |
-| `to_status` | CharField(16) | no / required | `No declared default` | State after the recorded inventory operation. Choices: `DRAFT`, `QC_PENDING`, `AVAILABLE`, `QUARANTINED`, `RETIRED`. |
+| `to_status` | CharField(16) | no / required | `No declared default` | State after the recorded inventory operation. Choices: `DRAFT`, `QC_PENDING`, `AVAILABLE`, `OUT_FOR_DELIVERY`, `RETURNING_TO_HUB`, `SOLD`, `QUARANTINED`, `RETIRED`. |
 | `from_hub` | ForeignKey -> markets.Hub; PROTECT | yes / allowed | `No declared default` | Prior location reference where applicable, not proof of a completed transfer. |
 | `to_hub` | ForeignKey -> markets.Hub; PROTECT | no / required | `No declared default` | Recorded destination hub identity for this operation. |
-| `from_custody` | CharField(16) | no / required | `No declared default` | Custody before the operation. Choices: `UNKNOWN`, `HUB`. |
-| `to_custody` | CharField(16) | no / required | `No declared default` | Custody after the operation. Choices: `UNKNOWN`, `HUB`. |
+| `from_custody` | CharField(16) | no / required | `No declared default` | Custody before the operation. Choices: `UNKNOWN`, `HUB`, `AGENT`, `CUSTOMER`. |
+| `to_custody` | CharField(16) | no / required | `No declared default` | Custody after the operation. Choices: `UNKNOWN`, `HUB`, `AGENT`, `CUSTOMER`. |
 | `actor` | ForeignKey -> accounts.StaffUser; PROTECT | no / required | `No declared default` | Staff actor FK. See model notes for optional named-system attribution where supported. |
 | `actor_label` | CharField(255) | no / required | `No declared default` | Copied staff UUID label or permitted named-system identity; not a customer link. |
 | `occurred_at` | DateTimeField | no / required | `No declared default` | Event/observation time. In AuditEvent it is generated on insertion. |
@@ -2756,18 +3236,23 @@ class InventoryUnit(ValidatedReferenceModel):
         DRAFT = "DRAFT", "Draft / not operationally available"
         QC_PENDING = "QC_PENDING", "Awaiting inspection"
         AVAILABLE = "AVAILABLE", "Available at hub"
+        OUT_FOR_DELIVERY = "OUT_FOR_DELIVERY", "With assigned agent"
+        RETURNING_TO_HUB = "RETURNING_TO_HUB", "Returning to hub"
+        SOLD = "SOLD", "Sold"
         QUARANTINED = "QUARANTINED", "Quarantined"
         RETIRED = "RETIRED", "Retired"
 
     class Custody(models.TextChoices):
         UNKNOWN = "UNKNOWN", "Not physically verified"
         HUB = "HUB", "Verified at hub"
+        AGENT = "AGENT", "Assigned agent custody"
+        CUSTOMER = "CUSTOMER", "Purchased customer custody"
 
     variant = models.ForeignKey(
         "catalog.ProductVariant", on_delete=models.PROTECT, related_name="inventory_units"
     )
     hub = models.ForeignKey("markets.Hub", on_delete=models.PROTECT, related_name="inventory_units")
-    status = models.CharField(max_length=16, choices=Status.choices, default=Status.DRAFT)
+    status = models.CharField(max_length=24, choices=Status.choices, default=Status.DRAFT)
     custody = models.CharField(max_length=16, choices=Custody.choices, default=Custody.UNKNOWN)
 
     objects = InventoryUnitQuerySet.as_manager()
@@ -2779,12 +3264,21 @@ class InventoryUnit(ValidatedReferenceModel):
         constraints = [
             models.CheckConstraint(
                 condition=models.Q(
-                    status__in=["DRAFT", "QC_PENDING", "AVAILABLE", "QUARANTINED", "RETIRED"]
+                    status__in=[
+                        "DRAFT",
+                        "QC_PENDING",
+                        "AVAILABLE",
+                        "QUARANTINED",
+                        "RETIRED",
+                        "OUT_FOR_DELIVERY",
+                        "RETURNING_TO_HUB",
+                        "SOLD",
+                    ]
                 ),
                 name="inventory_unit_status_valid",
             ),
             models.CheckConstraint(
-                condition=models.Q(custody__in=["UNKNOWN", "HUB"]),
+                condition=models.Q(custody__in=["UNKNOWN", "HUB", "AGENT", "CUSTOMER"]),
                 name="inventory_unit_custody_valid",
             ),
             models.CheckConstraint(
@@ -2972,6 +3466,16 @@ class InventoryReservation(LifecycleModel):
     released_at = models.DateTimeField(null=True, blank=True, validators=[validate_observed_at])
     release_reason = models.CharField(max_length=255, blank=True)
     resolution_reference = models.CharField(max_length=255, blank=True)
+    resolution = models.ForeignKey(
+        "payments.PaymentResolution", null=True, blank=True, on_delete=models.PROTECT
+    )
+    disposition = models.OneToOneField(
+        "delivery.ReservationCustodyEvent",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="closed_reservation",
+    )
     mutable_fields = (
         "status",
         "capture_started_at",
@@ -2979,12 +3483,15 @@ class InventoryReservation(LifecycleModel):
         "released_at",
         "release_reason",
         "resolution_reference",
+        "resolution_id",
+        "disposition_id",
     )
     write_once_fields = mutable_fields[1:]
     initial_status = "HELD"
     transitions = {
         "HELD": ("CAPTURE_PENDING", "EXPIRED", "RELEASED"),
         "CAPTURE_PENDING": ("COMMITTED", "RELEASED"),
+        "COMMITTED": ("RELEASED",),
     }
 
     class Meta(LifecycleModel.Meta):
@@ -3007,7 +3514,7 @@ class InventoryReservation(LifecycleModel):
                 name="reservation_release_evidence",
             ),
             models.CheckConstraint(
-                condition=Q(status="COMMITTED", committed_at__isnull=False)
+                condition=Q(status__in=["COMMITTED", "RELEASED"], committed_at__isnull=False)
                 | (~Q(status="COMMITTED") & Q(committed_at__isnull=True)),
                 name="reservation_commit_time",
             ),
@@ -3466,14 +3973,15 @@ Refs: BUSINESS_RULES.md R-25, R-26, R-28; DECISIONS.md D-27, BD-01, CA-01.
 | `payee_legal_entity` | ForeignKey -> compliance.LegalEntity; PROTECT | no / required | `No declared default` | Protected party reference; historical details are snapshotted. |
 | `payee_snapshot` | JSONField | no / required | `No declared default` | Historical collection-party details, independent of later entity edits. |
 | `policy_revision` | ForeignKey -> compliance.BusinessConfiguration; PROTECT | no / required | `No declared default` | Stored policy revision; see model guards below. |
+| `policy_scope_version` | PositiveSmallIntegerField | no / required | `2` | Identity contract: legacy 1 uses codes; new 2 uses public UUIDs. |
 | `policy_snapshot` | JSONField | no / required | `No declared default` | Historical policy facts; this JSON alone does not establish approval. |
-| `amount_minor` | PositiveBigIntegerField | no / required | `No declared default` | Positive integer currency minor units; no float coercion or rounding. |
+| `amount_minor` | PositiveBigIntegerField | no / required | `No declared default` | Integer minor units; field-specific bounds apply, without implicit rounding. |
 | `currency` | CharField(3) | no / required | `No declared default` | Explicit currency; must agree across obligation, attempt and allocation. |
 | `quote_expires_at` | DateTimeField | no / required | `No declared default` | Explicit deadline for accepting this quote; no default timeout. |
 | `accepted_at` | DateTimeField | yes / allowed | `No declared default` | Stored accepted at; see model guards below. |
 | `status` | CharField(16) | no / required | `'QUOTED'` | Record lifecycle only; see state guards and workflow boundaries. Choices: `QUOTED`, `DUE`, `COLLECTED`, `VOID`. |
 
-**Explicit Meta constraints:** `booking_charge_positive_amount`, `booking_charge_currency`, `booking_charge_revision`, `charge_revision_positive`, `charge_acceptance_time`, `booking_one_live_charge`
+**Explicit Meta constraints:** `booking_charge_positive_amount`, `booking_charge_currency`, `booking_charge_revision`, `charge_revision_positive`, `charge_policy_scope_version`, `charge_acceptance_time`, `booking_one_live_charge`
 
 **Explicit Meta indexes:** None declared; field/FK and SQL guards may still apply.
 
@@ -3494,7 +4002,8 @@ Refs: BUSINESS_RULES.md R-14, R-24; DECISIONS.md D-27, BD-02.
 | `created_at` | DateTimeField | no / allowed | `auto_now_add` | Stored created at; see model guards below. |
 | `updated_at` | DateTimeField | no / allowed | `auto_now` | Stored updated at; see model guards below. |
 | `public_id` | UUIDField(32); unique | no / required | `uuid.uuid4` | Stored public id; see model guards below. |
-| `booking_charge` | ForeignKey -> payments.BookingCharge; PROTECT | no / required | `No declared default` | The exact versioned upfront obligation being collected or paid. |
+| `booking_charge` | ForeignKey -> payments.BookingCharge; PROTECT | yes / allowed | `No declared default` | Upfront obligation; exclusive with a purchase obligation where applicable. |
+| `purchase_obligation` | ForeignKey -> billing.PurchaseObligation; PROTECT | yes / allowed | `No declared default` | Final purchase balance, shared across payment presentation channels. |
 | `version` | PositiveIntegerField | no / required | `No declared default` | Stored version; see model guards below. |
 | `opened_at` | DateTimeField | no / required | `django.utils.timezone.now` | Stored opened at; see model guards below. |
 | `expires_at` | DateTimeField | no / required | `No declared default` | Stored expires at; see model guards below. |
@@ -3503,9 +4012,10 @@ Refs: BUSINESS_RULES.md R-14, R-24; DECISIONS.md D-27, BD-02.
 | `capture_started_at` | DateTimeField | yes / allowed | `No declared default` | Start of protected capture; ordinary expiry cannot release it. |
 | `paid_at` | DateTimeField | yes / allowed | `No declared default` | Stored paid at; see model guards below. |
 | `closed_at` | DateTimeField | yes / allowed | `No declared default` | Stored closed at; see model guards below. |
-| `resolution_reference` | CharField(255) | no / allowed | `No declared default` | Provider reconciliation evidence required before safe release. |
+| `resolution_reference` | CharField(255) | no / allowed | `No declared default` | Supplementary reference; linked resolution evidence is authoritative. |
+| `resolution` | ForeignKey -> payments.PaymentResolution; PROTECT | yes / allowed | `No declared default` | Attributable immutable provider reconciliation for this exact context. |
 
-**Explicit Meta constraints:** `payment_context_version`, `charge_one_live_context`, `context_version_positive`, `context_expiry`, `context_paid_time`, `context_capture_time`, `context_closed_time`
+**Explicit Meta constraints:** `context_one_obligation`, `purchase_context_version`, `purchase_one_live_context`, `payment_context_version`, `charge_one_live_context`, `context_version_positive`, `context_expiry`, `context_paid_time`, `context_capture_time`, `context_closed_time`
 
 **Explicit Meta indexes:** `context_expiry_scan_idx`
 
@@ -3533,7 +4043,7 @@ arrival nor authorization alone means paid. Refs: R-23, R-24; D-27.
 | `provider_account` | CharField(128) | no / required | `No declared default` | Provider's merchant/account namespace; never credentials. |
 | `environment` | CharField(4) | no / required | `No declared default` | TEST/LIVE identity namespace; fakes cannot operate in production. Choices: `TEST`, `LIVE`. |
 | `provider_order_id` | CharField(255) | yes / allowed | `No declared default` | Provider order identity, assigned once after creation/reconciliation. |
-| `amount_minor` | PositiveBigIntegerField | no / required | `No declared default` | Positive integer currency minor units; no float coercion or rounding. |
+| `amount_minor` | PositiveBigIntegerField | no / required | `No declared default` | Integer minor units; field-specific bounds apply, without implicit rounding. |
 | `currency` | CharField(3) | no / required | `No declared default` | Explicit currency; must agree across obligation, attempt and allocation. |
 | `status` | CharField(20) | no / required | `'CREATING'` | Record lifecycle only; see state guards and workflow boundaries. Choices: `CREATING`, `PENDING`, `AUTHORIZED`, `CAPTURE_PENDING`, `SUCCEEDED`, `FAILED`, `EXPIRED`, `REVIEW_REQUIRED`. |
 | `capture_requested_at` | DateTimeField | yes / allowed | `No declared default` | Backend capture request time, separate from verified success. |
@@ -3595,13 +4105,13 @@ Refs: BUSINESS_RULES.md R-24, R-26, R-28; DECISIONS.md D-27.
 | `id` | BigAutoField; PK | no / allowed | `No declared default` | Stored id; see model guards below. |
 | `public_id` | UUIDField(32); unique | no / required | `uuid.uuid4` | Stored public id; see model guards below. |
 | `recorded_at` | DateTimeField | no / allowed | `auto_now_add` | Stored recorded at; see model guards below. |
-| `attempt` | ForeignKey -> payments.PaymentAttempt; PROTECT | no / required | `No declared default` | Stored attempt; see model guards below. |
+| `attempt` | ForeignKey -> payments.PaymentAttempt; PROTECT | yes / allowed | `No declared default` | Stored attempt; see model guards below. |
 | `provider` | CharField(32) | no / required | `No declared default` | Stored provider; see model guards below. |
 | `provider_account` | CharField(128) | no / required | `No declared default` | Provider's merchant/account namespace; never credentials. |
 | `environment` | CharField(4) | no / required | `No declared default` | TEST/LIVE identity namespace; fakes cannot operate in production. Choices: `TEST`, `LIVE`. |
 | `provider_payment_id` | CharField(255) | no / required | `No declared default` | Payment identity; authorization and capture remain distinct facts. |
 | `transaction_kind` | CharField(16) | no / required | `No declared default` | AUTHORISATION or CAPTURE; only captured funds can be allocated. Choices: `AUTHORISATION`, `CAPTURE`. |
-| `amount_minor` | PositiveBigIntegerField | no / required | `No declared default` | Positive integer currency minor units; no float coercion or rounding. |
+| `amount_minor` | PositiveBigIntegerField | no / required | `No declared default` | Integer minor units; field-specific bounds apply, without implicit rounding. |
 | `currency` | CharField(3) | no / required | `No declared default` | Explicit currency; must agree across obligation, attempt and allocation. |
 | `occurred_at` | DateTimeField | no / required | `No declared default` | Stored occurred at; see model guards below. |
 | `verified_at` | DateTimeField | no / required | `No declared default` | Stored verified at; see model guards below. |
@@ -3629,13 +4139,95 @@ not revenue recognition or applying a deposit to a sale. Refs: R-24--R-28.
 | `public_id` | UUIDField(32); unique | no / required | `uuid.uuid4` | Stored public id; see model guards below. |
 | `recorded_at` | DateTimeField | no / allowed | `auto_now_add` | Stored recorded at; see model guards below. |
 | `gateway_transaction` | ForeignKey -> payments.GatewayTransaction; PROTECT | no / required | `No declared default` | Immutable capture being applied within receipt limits. |
-| `booking_charge` | ForeignKey -> payments.BookingCharge; PROTECT | no / required | `No declared default` | The exact versioned upfront obligation being collected or paid. |
-| `amount_minor` | PositiveBigIntegerField | no / required | `No declared default` | Positive integer currency minor units; no float coercion or rounding. |
+| `booking_charge` | ForeignKey -> payments.BookingCharge; PROTECT | yes / allowed | `No declared default` | Upfront obligation; exclusive with a purchase obligation where applicable. |
+| `purchase_obligation` | ForeignKey -> billing.PurchaseObligation; PROTECT | yes / allowed | `No declared default` | Final purchase balance, shared across payment presentation channels. |
+| `amount_minor` | PositiveBigIntegerField | no / required | `No declared default` | Integer minor units; field-specific bounds apply, without implicit rounding. |
 | `currency` | CharField(3) | no / required | `No declared default` | Explicit currency; must agree across obligation, attempt and allocation. |
 | `allocated_at` | DateTimeField | no / required | `django.utils.timezone.now` | Stored allocated at; see model guards below. |
 | `idempotency_key` | UUIDField(32); unique | no / required | `No declared default` | Stored idempotency key; see model guards below. |
 
-**Explicit Meta constraints:** `payment_allocation_positive_amount`, `payment_allocation_currency`, `receipt_charge_allocation_unique`
+**Explicit Meta constraints:** `payment_allocation_positive_amount`, `payment_allocation_currency`, `allocation_one_obligation`, `receipt_purchase_allocation`, `receipt_charge_allocation_unique`
+
+**Explicit Meta indexes:** None declared; field/FK and SQL guards may still apply.
+
+<a id="model-payments-paymentresolution"></a>
+
+### PaymentResolution
+
+**Table:** `payments_paymentresolution`. **Source:** [payments/models.py](../arkatara_backend/payments/models.py).
+
+Attributable provider reconciliation, without choosing refund/retention policy.
+
+Captured funds may remain a separate financial liability after stock is freed.
+Receipt and allocation totals are frozen observations, never erased history.
+Refs: BUSINESS_RULES.md R-26, R-28, R-30, R-40; DECISIONS.md BD-02, CA-01.
+
+| Field | Type / relationship | Null / blank | Default / generated value | Explanation |
+| --- | --- | --- | --- | --- |
+| `id` | BigAutoField; PK | no / allowed | `No declared default` | Stored id; see model guards below. |
+| `public_id` | UUIDField(32); unique | no / required | `uuid.uuid4` | Stored public id; see model guards below. |
+| `recorded_at` | DateTimeField | no / allowed | `auto_now_add` | Stored recorded at; see model guards below. |
+| `context` | ForeignKey -> payments.PaymentContext; PROTECT | no / required | `No declared default` | Stored context; see model guards below. |
+| `staff_actor` | ForeignKey -> accounts.StaffUser; PROTECT | yes / allowed | `No declared default` | Stored staff actor; see model guards below. |
+| `system_actor` | CharField(128) | no / allowed | `No declared default` | Stored system actor; see model guards below. |
+| `reason` | TextField | no / required | `No declared default` | Stored reason; see model guards below. |
+| `evidence_reference` | CharField(500) | no / required | `No declared default` | Stored evidence reference; see model guards below. |
+| `reconciled_at` | DateTimeField | no / required | `django.utils.timezone.now` | Stored reconciled at; see model guards below. |
+| `outcome` | CharField(32) | no / required | `No declared default` | Stored outcome; see model guards below. Choices: `NO_CAPTURE`, `CAPTURE_NOT_ACCEPTED`. |
+| `captured_minor` | PositiveBigIntegerField | no / required | `No declared default` | Stored captured minor; see model guards below. |
+| `allocated_minor` | PositiveBigIntegerField | no / required | `No declared default` | Stored allocated minor; see model guards below. |
+| `currency` | CharField(3) | no / required | `No declared default` | Explicit currency; must agree across obligation, attempt and allocation. |
+
+**Explicit Meta constraints:** `resolution_actor`, `resolution_capture_outcome`, `resolution_allocated_bound`
+
+**Explicit Meta indexes:** None declared; field/FK and SQL guards may still apply.
+
+<a id="model-payments-gatewaytransactionmatch"></a>
+
+### GatewayTransactionMatch
+
+**Table:** `payments_gatewaytransactionmatch`. **Source:** [payments/models.py](../arkatara_backend/payments/models.py).
+
+Later matching adds evidence without rewriting an unmatched receipt. Refs: R-26, R-30.
+
+| Field | Type / relationship | Null / blank | Default / generated value | Explanation |
+| --- | --- | --- | --- | --- |
+| `id` | BigAutoField; PK | no / allowed | `No declared default` | Stored id; see model guards below. |
+| `public_id` | UUIDField(32); unique | no / required | `uuid.uuid4` | Stored public id; see model guards below. |
+| `recorded_at` | DateTimeField | no / allowed | `auto_now_add` | Stored recorded at; see model guards below. |
+| `gateway_transaction` | OneToOneField -> payments.GatewayTransaction; PROTECT; unique | no / required | `No declared default` | Immutable capture being applied within receipt limits. |
+| `attempt` | ForeignKey -> payments.PaymentAttempt; PROTECT | no / required | `No declared default` | Stored attempt; see model guards below. |
+| `staff_actor` | ForeignKey -> accounts.StaffUser; PROTECT | yes / allowed | `No declared default` | Stored staff actor; see model guards below. |
+| `system_actor` | CharField(128) | no / allowed | `No declared default` | Stored system actor; see model guards below. |
+| `reason` | TextField | no / required | `No declared default` | Stored reason; see model guards below. |
+| `evidence_reference` | CharField(500) | no / required | `No declared default` | Stored evidence reference; see model guards below. |
+| `matched_at` | DateTimeField | no / required | `django.utils.timezone.now` | Stored matched at; see model guards below. |
+
+**Explicit Meta constraints:** `receipt_match_actor`
+
+**Explicit Meta indexes:** None declared; field/FK and SQL guards may still apply.
+
+<a id="model-payments-paymentresolutionreceipt"></a>
+
+### PaymentResolutionReceipt
+
+**Table:** `payments_paymentresolutionreceipt`. **Source:** [payments/models.py](../arkatara_backend/payments/models.py).
+
+Exact captured facts considered by reconciliation, including currency mismatches.
+
+Totals on PaymentResolution describe its stated currency only; other currencies
+remain explicitly attributable through their original receipts.
+Refs: BUSINESS_RULES.md R-26, R-28, R-30, R-40.
+
+| Field | Type / relationship | Null / blank | Default / generated value | Explanation |
+| --- | --- | --- | --- | --- |
+| `id` | BigAutoField; PK | no / allowed | `No declared default` | Stored id; see model guards below. |
+| `public_id` | UUIDField(32); unique | no / required | `uuid.uuid4` | Stored public id; see model guards below. |
+| `recorded_at` | DateTimeField | no / allowed | `auto_now_add` | Stored recorded at; see model guards below. |
+| `resolution` | ForeignKey -> payments.PaymentResolution; PROTECT | no / required | `No declared default` | Attributable immutable provider reconciliation for this exact context. |
+| `gateway_transaction` | ForeignKey -> payments.GatewayTransaction; PROTECT | no / required | `No declared default` | Immutable capture being applied within receipt limits. |
+
+**Explicit Meta constraints:** `resolution_receipt_once`
 
 **Explicit Meta indexes:** None declared; field/FK and SQL guards may still apply.
 
@@ -3646,6 +4238,7 @@ Source of truth: [payments/models.py](../arkatara_backend/payments/models.py).
 ```python
 """Upfront collection evidence. No gateway calls or accounting classification here."""
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import F, Q
@@ -3655,6 +4248,7 @@ from common.evidence import AppendOnlyModel
 from common.fields import MinorUnitField
 from common.persistence import LifecycleModel, currency_validator, money_constraints
 from common.verification import digest_validator, validate_observed_at
+from compliance.configuration import validate_policy_binding
 
 
 class BookingCharge(LifecycleModel):
@@ -3673,6 +4267,9 @@ class BookingCharge(LifecycleModel):
     policy_revision = models.ForeignKey(
         "compliance.BusinessConfiguration", on_delete=models.PROTECT
     )
+    # Legacy bindings remain readable; new commitments use public UUID identities.
+    # Refs: BUSINESS_RULES.md R-07, R-28.
+    policy_scope_version = models.PositiveSmallIntegerField(default=2)
     policy_snapshot = models.JSONField()
     amount_minor = MinorUnitField()
     currency = models.CharField(max_length=3, validators=[currency_validator])
@@ -3699,6 +4296,9 @@ class BookingCharge(LifecycleModel):
             models.UniqueConstraint(fields=["booking", "revision"], name="booking_charge_revision"),
             models.CheckConstraint(condition=Q(revision__gt=0), name="charge_revision_positive"),
             models.CheckConstraint(
+                condition=Q(policy_scope_version__in=[1, 2]), name="charge_policy_scope_version"
+            ),
+            models.CheckConstraint(
                 condition=Q(accepted_at__isnull=True, status__in=["QUOTED", "VOID"])
                 | Q(
                     accepted_at__isnull=False,
@@ -3714,6 +4314,19 @@ class BookingCharge(LifecycleModel):
             ),
         ]
 
+    def clean(self):
+        super().clean()
+        if self._state.adding and self.policy_scope_version != 2:
+            raise ValidationError("New policy bindings require public UUID scope identifiers.")
+        if self.policy_revision_id and self.booking_id:
+            validate_policy_binding(
+                self.policy_revision,
+                "payments",
+                "booking-charge-policy-reference",
+                market=self.booking.market,
+                scope_version=self.policy_scope_version,
+            )
+
 
 class PaymentContext(LifecycleModel):
     """One timed attempt to collect an obligation and hold a complete trial selection.
@@ -3723,7 +4336,14 @@ class PaymentContext(LifecycleModel):
     """
 
     booking_charge = models.ForeignKey(
-        BookingCharge, on_delete=models.PROTECT, related_name="contexts"
+        BookingCharge, null=True, blank=True, on_delete=models.PROTECT, related_name="contexts"
+    )
+    purchase_obligation = models.ForeignKey(
+        "billing.PurchaseObligation",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="contexts",
     )
     version = models.PositiveIntegerField()
     opened_at = models.DateTimeField(default=timezone.now, validators=[validate_observed_at])
@@ -3743,12 +4363,20 @@ class PaymentContext(LifecycleModel):
     paid_at = models.DateTimeField(null=True, blank=True, validators=[validate_observed_at])
     closed_at = models.DateTimeField(null=True, blank=True, validators=[validate_observed_at])
     resolution_reference = models.CharField(max_length=255, blank=True)
+    resolution = models.ForeignKey(
+        "PaymentResolution",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="closed_contexts",
+    )
     mutable_fields = (
         "status",
         "capture_started_at",
         "paid_at",
         "closed_at",
         "resolution_reference",
+        "resolution_id",
     )
     write_once_fields = mutable_fields[1:]
     initial_status = "OPEN"
@@ -3760,6 +4388,19 @@ class PaymentContext(LifecycleModel):
 
     class Meta(LifecycleModel.Meta):
         constraints = [
+            models.CheckConstraint(
+                condition=Q(booking_charge__isnull=False, purchase_obligation__isnull=True)
+                | Q(booking_charge__isnull=True, purchase_obligation__isnull=False),
+                name="context_one_obligation",
+            ),
+            models.UniqueConstraint(
+                fields=["purchase_obligation", "version"], name="purchase_context_version"
+            ),
+            models.UniqueConstraint(
+                fields=["purchase_obligation"],
+                condition=Q(status__in=["OPEN", "CAPTURING", "PAID", "REVIEW_REQUIRED"]),
+                name="purchase_one_live_context",
+            ),
             models.UniqueConstraint(
                 fields=["booking_charge", "version"], name="payment_context_version"
             ),
@@ -3789,6 +4430,17 @@ class PaymentContext(LifecycleModel):
             ),
         ]
         indexes = [models.Index(fields=["status", "expires_at"], name="context_expiry_scan_idx")]
+
+    @property
+    def obligation(self):
+        return self.booking_charge if self.booking_charge_id else self.purchase_obligation
+
+    def clean(self):
+        super().clean()
+        if self.purchase_obligation_id and self.purchase_obligation.amount_minor == 0:
+            # Already-applied funds settle this balance without another provider request.
+            # Refs: BUSINESS_RULES.md R-25, R-26; DECISIONS.md BD-01, CA-01.
+            raise ValidationError("A zero balance does not require a provider collection context.")
 
 
 class PaymentAttempt(LifecycleModel):
@@ -3883,8 +4535,8 @@ class PaymentAttempt(LifecycleModel):
     def clean(self):
         super().clean()
         if self.context_id and (self.amount_minor, self.currency) != (
-            self.context.booking_charge.amount_minor,
-            self.context.booking_charge.currency,
+            self.context.obligation.amount_minor,
+            self.context.obligation.currency,
         ):
             raise ValidationError("Attempt amount and currency must match the obligation.")
 
@@ -3942,7 +4594,11 @@ class GatewayTransaction(AppendOnlyModel):
     """
 
     attempt = models.ForeignKey(
-        PaymentAttempt, on_delete=models.PROTECT, related_name="transactions"
+        PaymentAttempt,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="transactions",
     )
     provider = models.CharField(max_length=32)
     provider_account = models.CharField(max_length=128)
@@ -3993,7 +4649,14 @@ class PaymentAllocation(AppendOnlyModel):
         GatewayTransaction, on_delete=models.PROTECT, related_name="allocations"
     )
     booking_charge = models.ForeignKey(
-        BookingCharge, on_delete=models.PROTECT, related_name="allocations"
+        BookingCharge, null=True, blank=True, on_delete=models.PROTECT, related_name="allocations"
+    )
+    purchase_obligation = models.ForeignKey(
+        "billing.PurchaseObligation",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="allocations",
     )
     amount_minor = MinorUnitField()
     currency = models.CharField(max_length=3, validators=[currency_validator])
@@ -4003,10 +4666,116 @@ class PaymentAllocation(AppendOnlyModel):
     class Meta(AppendOnlyModel.Meta):
         constraints = [
             *money_constraints("payment_allocation"),
+            models.CheckConstraint(
+                condition=Q(booking_charge__isnull=False, purchase_obligation__isnull=True)
+                | Q(booking_charge__isnull=True, purchase_obligation__isnull=False),
+                name="allocation_one_obligation",
+            ),
+            models.UniqueConstraint(
+                fields=["gateway_transaction", "purchase_obligation"],
+                name="receipt_purchase_allocation",
+            ),
             models.UniqueConstraint(
                 fields=["gateway_transaction", "booking_charge"],
                 name="receipt_charge_allocation_unique",
             ),
+        ]
+
+
+class PaymentResolution(AppendOnlyModel):
+    """Attributable provider reconciliation, without choosing refund/retention policy.
+
+    Captured funds may remain a separate financial liability after stock is freed.
+    Receipt and allocation totals are frozen observations, never erased history.
+    Refs: BUSINESS_RULES.md R-26, R-28, R-30, R-40; DECISIONS.md BD-02, CA-01.
+    """
+
+    context = models.ForeignKey(
+        PaymentContext, on_delete=models.PROTECT, related_name="resolutions"
+    )
+    staff_actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT
+    )
+    system_actor = models.CharField(max_length=128, blank=True)
+    reason = models.TextField()
+    evidence_reference = models.CharField(max_length=500)
+    reconciled_at = models.DateTimeField(default=timezone.now, validators=[validate_observed_at])
+    outcome = models.CharField(
+        max_length=32,
+        choices=[
+            ("NO_CAPTURE", "No capture"),
+            ("CAPTURE_NOT_ACCEPTED", "Captured funds not accepted for fulfilment"),
+        ],
+    )
+    captured_minor = models.PositiveBigIntegerField()
+    allocated_minor = models.PositiveBigIntegerField()
+    currency = models.CharField(max_length=3, validators=[currency_validator])
+
+    class Meta(AppendOnlyModel.Meta):
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(staff_actor__isnull=False, system_actor="")
+                | (Q(staff_actor__isnull=True) & ~Q(system_actor="")),
+                name="resolution_actor",
+            ),
+            models.CheckConstraint(
+                condition=Q(outcome="NO_CAPTURE", captured_minor=0, allocated_minor=0)
+                | Q(outcome="CAPTURE_NOT_ACCEPTED"),
+                name="resolution_capture_outcome",
+            ),
+            models.CheckConstraint(
+                condition=Q(allocated_minor__lte=F("captured_minor")),
+                name="resolution_allocated_bound",
+            ),
+        ]
+
+
+class GatewayTransactionMatch(AppendOnlyModel):
+    """Later matching adds evidence without rewriting an unmatched receipt.
+
+    Refs: BUSINESS_RULES.md R-26, R-30.
+    """
+
+    gateway_transaction = models.OneToOneField(
+        GatewayTransaction, on_delete=models.PROTECT, related_name="match"
+    )
+    attempt = models.ForeignKey(PaymentAttempt, on_delete=models.PROTECT)
+    staff_actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT
+    )
+    system_actor = models.CharField(max_length=128, blank=True)
+    reason = models.TextField()
+    evidence_reference = models.CharField(max_length=500)
+    matched_at = models.DateTimeField(default=timezone.now, validators=[validate_observed_at])
+
+    class Meta(AppendOnlyModel.Meta):
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(staff_actor__isnull=False, system_actor="")
+                | (Q(staff_actor__isnull=True) & ~Q(system_actor="")),
+                name="receipt_match_actor",
+            )
+        ]
+
+
+class PaymentResolutionReceipt(AppendOnlyModel):
+    """Exact captured facts considered by reconciliation, including currency mismatches.
+
+    Totals on PaymentResolution describe its stated currency only; other currencies
+    remain explicitly attributable through their original receipts.
+    Refs: BUSINESS_RULES.md R-26, R-28, R-30, R-40.
+    """
+
+    resolution = models.ForeignKey(
+        PaymentResolution, on_delete=models.PROTECT, related_name="receipts"
+    )
+    gateway_transaction = models.ForeignKey(GatewayTransaction, on_delete=models.PROTECT)
+
+    class Meta(AppendOnlyModel.Meta):
+        constraints = [
+            models.UniqueConstraint(
+                fields=["resolution", "gateway_transaction"], name="resolution_receipt_once"
+            )
         ]
 ```
 
@@ -4362,7 +5131,731 @@ class OutboxCommand(LifecycleModel):
 
 ## billing
 
-Pending persistence; billing's snapshot value object is included below. See the canonical coverage matrix for outstanding work.
+<a id="model-billing-taxevidence"></a>
+
+### TaxEvidence
+
+**Table:** `billing_taxevidence`. **Source:** [billing/models.py](../arkatara_backend/billing/models.py).
+
+Explicitly unconfigured treatment is never interpreted as zero tax.
+
+Snapshots retain entity/classification, component and calculation-policy facts.
+Refs: BUSINESS_RULES.md R-27, R-28, R-31; DECISIONS.md CA-01, CA-02, CA-03.
+
+| Field | Type / relationship | Null / blank | Default / generated value | Explanation |
+| --- | --- | --- | --- | --- |
+| `id` | BigAutoField; PK | no / allowed | `No declared default` | Stored id; see model guards below. |
+| `public_id` | UUIDField(32); unique | no / required | `uuid.uuid4` | Stored public id; see model guards below. |
+| `recorded_at` | DateTimeField | no / allowed | `auto_now_add` | Stored recorded at; see model guards below. |
+| `status` | CharField(16) | no / required | `No declared default` | Record lifecycle only; see state guards and workflow boundaries. Choices: `UNCONFIGURED`, `REVIEWED`. |
+| `treatment_snapshot` | JSONField | no / allowed | `builtins.dict` | Stored treatment snapshot; see model guards below. |
+| `review_reference` | CharField(500) | no / allowed | `No declared default` | Stored review reference; see model guards below. |
+| `reviewed_by` | ForeignKey -> accounts.StaffUser; PROTECT | yes / allowed | `No declared default` | Stored reviewed by; see model guards below. |
+| `reviewed_at` | DateTimeField | yes / allowed | `No declared default` | Stored reviewed at; see model guards below. |
+
+**Explicit Meta constraints:** `tax_review_evidence`
+
+**Explicit Meta indexes:** None declared; field/FK and SQL guards may still apply.
+
+<a id="model-billing-purchase"></a>
+
+### Purchase
+
+**Table:** `billing_purchase`. **Source:** [billing/models.py](../arkatara_backend/billing/models.py).
+
+Versioned authoritative selection; gross jewellery value stays separate from balance.
+
+No agent pricing override or implicit deposit deduction is implemented here.
+Refs: BUSINESS_RULES.md R-16, R-19, R-25, R-27, R-28; DECISIONS.md BD-04, CA-02.
+
+| Field | Type / relationship | Null / blank | Default / generated value | Explanation |
+| --- | --- | --- | --- | --- |
+| `id` | BigAutoField; PK | no / allowed | `No declared default` | Stored id; see model guards below. |
+| `created_at` | DateTimeField | no / allowed | `auto_now_add` | Stored created at; see model guards below. |
+| `updated_at` | DateTimeField | no / allowed | `auto_now` | Stored updated at; see model guards below. |
+| `public_id` | UUIDField(32); unique | no / required | `uuid.uuid4` | Stored public id; see model guards below. |
+| `booking` | ForeignKey -> trials.TrialBooking; PROTECT | no / required | `No declared default` | Stored booking; see model guards below. |
+| `revision` | PositiveIntegerField | no / required | `No declared default` | Stored revision; see model guards below. |
+| `seller` | ForeignKey -> compliance.LegalEntity; PROTECT | no / required | `No declared default` | Stored seller; see model guards below. |
+| `seller_snapshot` | JSONField | no / required | `No declared default` | Stored seller snapshot; see model guards below. |
+| `customer_snapshot` | JSONField | no / required | `No declared default` | Stored customer snapshot; see model guards below. |
+| `tax_evidence` | ForeignKey -> billing.TaxEvidence; PROTECT | no / required | `No declared default` | Stored tax evidence; see model guards below. |
+| `currency` | CharField(3) | no / required | `No declared default` | Explicit currency; must agree across obligation, attempt and allocation. |
+| `jewellery_total_minor` | PositiveBigIntegerField | no / required | `No declared default` | Stored jewellery total minor; see model guards below. |
+| `payable_minor` | PositiveBigIntegerField | no / required | `No declared default` | Basis less authoritative applications, proven when selection is sealed. |
+| `balance_snapshot` | JSONField | no / required | `No declared default` | Stored balance snapshot; see model guards below. |
+| `status` | CharField(16) | no / required | `'DRAFT'` | Record lifecycle only; see state guards and workflow boundaries. Choices: `DRAFT`, `SEALED`, `CONFIRMED`, `VOID`. |
+| `sealed_at` | DateTimeField | yes / allowed | `No declared default` | Seals authoritative selections and required historical evidence. |
+| `confirmed_at` | DateTimeField | yes / allowed | `No declared default` | Time confirmation met the owning model's evidence guards. |
+
+**Explicit Meta constraints:** `purchase_revision`, `purchase_revision_positive`, `purchase_positive_totals`, `purchase_currency`, `purchase_confirmed_time`, `purchase_sealed_time`
+
+**Explicit Meta indexes:** None declared; field/FK and SQL guards may still apply.
+
+<a id="model-billing-purchasebalanceevidence"></a>
+
+### PurchaseBalanceEvidence
+
+**Table:** `billing_purchasebalanceevidence`. **Source:** [billing/models.py](../arkatara_backend/billing/models.py).
+
+Attributable calculation basis before applying previously collected funds.
+
+Adjustments need explicit reviewed evidence; no adjustment or credit is seeded.
+The source application changes the outstanding balance, not jewellery value.
+Refs: BUSINESS_RULES.md R-07, R-19, R-25, R-28, R-30; DECISIONS.md BD-01, CA-01, CA-02.
+
+| Field | Type / relationship | Null / blank | Default / generated value | Explanation |
+| --- | --- | --- | --- | --- |
+| `id` | BigAutoField; PK | no / allowed | `No declared default` | Stored id; see model guards below. |
+| `public_id` | UUIDField(32); unique | no / required | `uuid.uuid4` | Stored public id; see model guards below. |
+| `recorded_at` | DateTimeField | no / allowed | `auto_now_add` | Stored recorded at; see model guards below. |
+| `purchase` | OneToOneField -> billing.Purchase; PROTECT; unique | no / required | `No declared default` | Stored purchase; see model guards below. |
+| `amount_due_before_application` | PositiveBigIntegerField | no / required | `No declared default` | Jewellery value plus adjustment before source funds. |
+| `adjustment_minor` | BigIntegerField | no / required | `No declared default` | Explicit signed adjustment; no commercial or tax treatment is defaulted. |
+| `currency` | CharField(3) | no / required | `No declared default` | Explicit currency; must agree across obligation, attempt and allocation. |
+| `actor` | ForeignKey -> accounts.StaffUser; PROTECT | no / required | `No declared default` | Stored actor; see model guards below. |
+| `observed_at` | DateTimeField | no / required | `django.utils.timezone.now` | Stored observed at; see model guards below. |
+| `reason` | TextField | no / required | `No declared default` | Stored reason; see model guards below. |
+| `evidence_reference` | CharField(500) | no / required | `No declared default` | Stored evidence reference; see model guards below. |
+| `calculation_snapshot` | JSONField | no / required | `No declared default` | Stored calculation snapshot; see model guards below. |
+| `policy_snapshot` | JSONField | no / required | `No declared default` | Historical policy facts; this JSON alone does not establish approval. |
+
+**Explicit Meta constraints:** `balance_basis_nonnegative`, `balance_evidence_currency`
+
+**Explicit Meta indexes:** None declared; field/FK and SQL guards may still apply.
+
+<a id="model-billing-upfrontapplication"></a>
+
+### UpfrontApplication
+
+**Table:** `billing_upfrontapplication`. **Source:** [billing/models.py](../arkatara_backend/billing/models.py).
+
+Explicit use of a collected upfront allocation toward one purchase balance.
+
+Locked source totals prevent the same funds funding two purchases. A voided
+purchase does not restore credit implicitly; reversal/refund policy stays gated.
+Refs: BUSINESS_RULES.md R-25, R-26, R-28, R-30; DECISIONS.md BD-01, CA-01.
+
+| Field | Type / relationship | Null / blank | Default / generated value | Explanation |
+| --- | --- | --- | --- | --- |
+| `id` | BigAutoField; PK | no / allowed | `No declared default` | Stored id; see model guards below. |
+| `public_id` | UUIDField(32); unique | no / required | `uuid.uuid4` | Stored public id; see model guards below. |
+| `recorded_at` | DateTimeField | no / allowed | `auto_now_add` | Stored recorded at; see model guards below. |
+| `balance_evidence` | ForeignKey -> billing.PurchaseBalanceEvidence; PROTECT | no / required | `No declared default` | Immutable numerical balance basis and explicit calculation/policy facts. |
+| `source_allocation` | ForeignKey -> payments.PaymentAllocation; PROTECT | no / required | `No declared default` | Captured upfront allocation consumed within a locked source budget. |
+| `amount_minor` | PositiveBigIntegerField | no / required | `No declared default` | Integer minor units; field-specific bounds apply, without implicit rounding. |
+| `currency` | CharField(3) | no / required | `No declared default` | Explicit currency; must agree across obligation, attempt and allocation. |
+| `actor` | ForeignKey -> accounts.StaffUser; PROTECT | no / required | `No declared default` | Stored actor; see model guards below. |
+| `observed_at` | DateTimeField | no / required | `django.utils.timezone.now` | Stored observed at; see model guards below. |
+| `reason` | TextField | no / required | `No declared default` | Stored reason; see model guards below. |
+| `evidence_reference` | CharField(500) | no / required | `No declared default` | Stored evidence reference; see model guards below. |
+| `policy_snapshot` | JSONField | no / required | `No declared default` | Historical policy facts; this JSON alone does not establish approval. |
+| `idempotency_key` | UUIDField(32); unique | no / required | `No declared default` | Stored idempotency key; see model guards below. |
+
+**Explicit Meta constraints:** `upfront_application_positive_amount`, `upfront_application_currency`
+
+**Explicit Meta indexes:** None declared; field/FK and SQL guards may still apply.
+
+<a id="model-billing-purchaseitem"></a>
+
+### PurchaseItem
+
+**Table:** `billing_purchaseitem`. **Source:** [billing/models.py](../arkatara_backend/billing/models.py).
+
+Exact selected piece and historical description/price/tax inputs.
+
+Refs: BUSINESS_RULES.md R-11, R-27.
+
+| Field | Type / relationship | Null / blank | Default / generated value | Explanation |
+| --- | --- | --- | --- | --- |
+| `id` | BigAutoField; PK | no / allowed | `No declared default` | Stored id; see model guards below. |
+| `public_id` | UUIDField(32); unique | no / required | `uuid.uuid4` | Stored public id; see model guards below. |
+| `recorded_at` | DateTimeField | no / allowed | `auto_now_add` | Stored recorded at; see model guards below. |
+| `purchase` | ForeignKey -> billing.Purchase; PROTECT | no / required | `No declared default` | Stored purchase; see model guards below. |
+| `reservation` | ForeignKey -> inventory.InventoryReservation; PROTECT | no / required | `No declared default` | One exclusive physical-piece commitment; not a catalogue variant. |
+| `line_number` | PositiveIntegerField | no / required | `No declared default` | Stored line number; see model guards below. |
+| `amount_minor` | PositiveBigIntegerField | no / required | `No declared default` | Integer minor units; field-specific bounds apply, without implicit rounding. |
+| `currency` | CharField(3) | no / required | `No declared default` | Explicit currency; must agree across obligation, attempt and allocation. |
+| `product_snapshot` | JSONField | no / required | `No declared default` | Stored product snapshot; see model guards below. |
+| `price_snapshot` | JSONField | no / required | `No declared default` | Stored price snapshot; see model guards below. |
+
+**Explicit Meta constraints:** `purchase_item_positive_amount`, `purchase_item_currency`, `purchase_line_number`, `purchase_piece_once`, `purchase_line_positive`
+
+**Explicit Meta indexes:** None declared; field/FK and SQL guards may still apply.
+
+<a id="model-billing-purchaseobligation"></a>
+
+### PurchaseObligation
+
+**Table:** `billing_purchaseobligation`. **Source:** [billing/models.py](../arkatara_backend/billing/models.py).
+
+Final balance obligation, independent of the upfront booking charge.
+
+Refs: BUSINESS_RULES.md R-23, R-25, R-26.
+
+| Field | Type / relationship | Null / blank | Default / generated value | Explanation |
+| --- | --- | --- | --- | --- |
+| `id` | BigAutoField; PK | no / allowed | `No declared default` | Stored id; see model guards below. |
+| `created_at` | DateTimeField | no / allowed | `auto_now_add` | Stored created at; see model guards below. |
+| `updated_at` | DateTimeField | no / allowed | `auto_now` | Stored updated at; see model guards below. |
+| `public_id` | UUIDField(32); unique | no / required | `uuid.uuid4` | Stored public id; see model guards below. |
+| `purchase` | OneToOneField -> billing.Purchase; PROTECT; unique | no / required | `No declared default` | Stored purchase; see model guards below. |
+| `amount_minor` | PositiveBigIntegerField | no / required | `No declared default` | Integer minor units; field-specific bounds apply, without implicit rounding. |
+| `currency` | CharField(3) | no / required | `No declared default` | Explicit currency; must agree across obligation, attempt and allocation. |
+| `quote_expires_at` | DateTimeField | no / required | `No declared default` | Explicit deadline for accepting this quote; no default timeout. |
+| `status` | CharField(16) | no / required | `'QUOTED'` | Record lifecycle only; see state guards and workflow boundaries. Choices: `QUOTED`, `DUE`, `COLLECTED`, `VOID`. |
+| `accepted_at` | DateTimeField | yes / allowed | `No declared default` | Stored accepted at; see model guards below. |
+
+**Explicit Meta constraints:** `purchase_obligation_nonnegative`, `purchase_obligation_currency`, `purchase_obligation_acceptance`
+
+**Explicit Meta indexes:** None declared; field/FK and SQL guards may still apply.
+
+<a id="model-billing-documentseries"></a>
+
+### DocumentSeries
+
+**Table:** `billing_documentseries`. **Source:** [billing/models.py](../arkatara_backend/billing/models.py).
+
+Reviewed numbering scope; no legal format/period is selected here.
+
+Refs: BUSINESS_RULES.md R-27; DECISIONS.md CA-02.
+
+| Field | Type / relationship | Null / blank | Default / generated value | Explanation |
+| --- | --- | --- | --- | --- |
+| `id` | BigAutoField; PK | no / allowed | `No declared default` | Stored id; see model guards below. |
+| `public_id` | UUIDField(32); unique | no / required | `uuid.uuid4` | Stored public id; see model guards below. |
+| `recorded_at` | DateTimeField | no / allowed | `auto_now_add` | Stored recorded at; see model guards below. |
+| `issuer` | ForeignKey -> compliance.LegalEntity; PROTECT | no / required | `No declared default` | Stored issuer; see model guards below. |
+| `code` | CharField(128) | no / required | `No declared default` | Stored code; see model guards below. |
+| `scope_snapshot` | JSONField | no / required | `No declared default` | Stored scope snapshot; see model guards below. |
+| `review_reference` | CharField(500) | no / required | `No declared default` | Stored review reference; see model guards below. |
+
+**Explicit Meta constraints:** `document_series_identity`
+
+**Explicit Meta indexes:** None declared; field/FK and SQL guards may still apply.
+
+<a id="model-billing-financialdocument"></a>
+
+### FinancialDocument
+
+**Table:** `billing_financialdocument`. **Source:** [billing/models.py](../arkatara_backend/billing/models.py).
+
+Draft then sealed header/lines for reviewed dispatch, upfront, sale or correction records.
+
+An issued document does not prove payment. Tax treatment is retained separately.
+Refs: BUSINESS_RULES.md R-27, R-28, R-29, R-31; DECISIONS.md CA-01, CA-02, LR-03.
+
+| Field | Type / relationship | Null / blank | Default / generated value | Explanation |
+| --- | --- | --- | --- | --- |
+| `id` | BigAutoField; PK | no / allowed | `No declared default` | Stored id; see model guards below. |
+| `created_at` | DateTimeField | no / allowed | `auto_now_add` | Stored created at; see model guards below. |
+| `updated_at` | DateTimeField | no / allowed | `auto_now` | Stored updated at; see model guards below. |
+| `public_id` | UUIDField(32); unique | no / required | `uuid.uuid4` | Stored public id; see model guards below. |
+| `booking` | ForeignKey -> trials.TrialBooking; PROTECT | no / required | `No declared default` | Stored booking; see model guards below. |
+| `booking_charge` | ForeignKey -> payments.BookingCharge; PROTECT | yes / allowed | `No declared default` | Upfront obligation; exclusive with a purchase obligation where applicable. |
+| `purchase_obligation` | ForeignKey -> billing.PurchaseObligation; PROTECT | yes / allowed | `No declared default` | Final purchase balance, shared across payment presentation channels. |
+| `corrects` | ForeignKey -> billing.FinancialDocument; PROTECT | yes / allowed | `No declared default` | Stored corrects; see model guards below. |
+| `kind` | CharField(24) | no / required | `No declared default` | Stored kind; see model guards below. Choices: `DISPATCH`, `UPFRONT_RECORD`, `TAX_INVOICE`, `ADJUSTMENT`. |
+| `series` | ForeignKey -> billing.DocumentSeries; PROTECT | no / required | `No declared default` | Stored series; see model guards below. |
+| `number` | PositiveBigIntegerField | yes / allowed | `No declared default` | Stored number; see model guards below. |
+| `issuer_snapshot` | JSONField | no / required | `No declared default` | Stored issuer snapshot; see model guards below. |
+| `recipient_snapshot` | JSONField | no / required | `No declared default` | Stored recipient snapshot; see model guards below. |
+| `tax_evidence` | ForeignKey -> billing.TaxEvidence; PROTECT | no / required | `No declared default` | Stored tax evidence; see model guards below. |
+| `amount_minor` | PositiveBigIntegerField | no / required | `No declared default` | Integer minor units; field-specific bounds apply, without implicit rounding. |
+| `currency` | CharField(3) | no / required | `No declared default` | Explicit currency; must agree across obligation, attempt and allocation. |
+| `status` | CharField(16) | no / required | `'DRAFT'` | Record lifecycle only; see state guards and workflow boundaries. Choices: `DRAFT`, `ISSUED`. |
+| `issued_at` | DateTimeField | yes / allowed | `No declared default` | Stored issued at; see model guards below. |
+| `review_reference` | CharField(500) | no / required | `No declared default` | Stored review reference; see model guards below. |
+
+**Explicit Meta constraints:** `issued_document_number`, `document_issue_evidence`, `document_obligation_kind`
+
+**Explicit Meta indexes:** None declared; field/FK and SQL guards may still apply.
+
+<a id="model-billing-financialdocumentline"></a>
+
+### FinancialDocumentLine
+
+**Table:** `billing_financialdocumentline`. **Source:** [billing/models.py](../arkatara_backend/billing/models.py).
+
+FinancialDocumentLine(id, public_id, recorded_at, document, line_number, amount_minor, snapshot, reservation, purchase_item)
+
+| Field | Type / relationship | Null / blank | Default / generated value | Explanation |
+| --- | --- | --- | --- | --- |
+| `id` | BigAutoField; PK | no / allowed | `No declared default` | Stored id; see model guards below. |
+| `public_id` | UUIDField(32); unique | no / required | `uuid.uuid4` | Stored public id; see model guards below. |
+| `recorded_at` | DateTimeField | no / allowed | `auto_now_add` | Stored recorded at; see model guards below. |
+| `document` | ForeignKey -> billing.FinancialDocument; PROTECT | no / required | `No declared default` | Stored document; see model guards below. |
+| `line_number` | PositiveIntegerField | no / required | `No declared default` | Stored line number; see model guards below. |
+| `amount_minor` | PositiveBigIntegerField | no / required | `No declared default` | Integer minor units; field-specific bounds apply, without implicit rounding. |
+| `snapshot` | JSONField | no / required | `No declared default` | Stored snapshot; see model guards below. |
+| `reservation` | ForeignKey -> inventory.InventoryReservation; PROTECT | yes / allowed | `No declared default` | One exclusive physical-piece commitment; not a catalogue variant. |
+| `purchase_item` | ForeignKey -> billing.PurchaseItem; PROTECT | yes / allowed | `No declared default` | Stored purchase item; see model guards below. |
+
+**Explicit Meta constraints:** `dispatch_document_piece`, `invoice_document_piece`, `document_line_number`, `document_line_positive`
+
+**Explicit Meta indexes:** None declared; field/FK and SQL guards may still apply.
+
+### Source: billing/models.py
+
+Source of truth: [billing/models.py](../arkatara_backend/billing/models.py).
+
+```python
+"""Historical sale and document facts; tax/commercial policies remain externally reviewed."""
+
+from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.db import models
+from django.db.models import F, Q, Sum
+from django.utils import timezone
+
+from common.evidence import AppendOnlyModel
+from common.fields import MinorUnitField, SignedMinorUnitField
+from common.persistence import LifecycleModel, currency_validator, money_constraints
+from common.verification import validate_observed_at
+
+
+class TaxEvidence(AppendOnlyModel):
+    """Explicitly unconfigured treatment is never interpreted as zero tax.
+
+    Snapshots retain entity/classification, component and calculation-policy facts.
+    Refs: BUSINESS_RULES.md R-27, R-28, R-31; DECISIONS.md CA-01, CA-02, CA-03.
+    """
+
+    status = models.CharField(
+        max_length=16, choices=[("UNCONFIGURED", "Unconfigured"), ("REVIEWED", "Reviewed")]
+    )
+    treatment_snapshot = models.JSONField(default=dict, blank=True)
+    review_reference = models.CharField(max_length=500, blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True, validators=[validate_observed_at])
+
+    class Meta(AppendOnlyModel.Meta):
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(
+                    status="UNCONFIGURED",
+                    treatment_snapshot={},
+                    review_reference="",
+                    reviewed_by__isnull=True,
+                    reviewed_at__isnull=True,
+                )
+                | (
+                    Q(status="REVIEWED", reviewed_by__isnull=False, reviewed_at__isnull=False)
+                    & ~Q(treatment_snapshot={})
+                    & ~Q(review_reference="")
+                ),
+                name="tax_review_evidence",
+            )
+        ]
+
+
+class Purchase(LifecycleModel):
+    """Versioned authoritative selection; gross jewellery value stays separate from balance.
+
+    No agent pricing override or implicit deposit deduction is implemented here.
+    Refs: BUSINESS_RULES.md R-16, R-19, R-25, R-27, R-28; DECISIONS.md BD-04, CA-02.
+    """
+
+    booking = models.ForeignKey(
+        "trials.TrialBooking", on_delete=models.PROTECT, related_name="purchases"
+    )
+    revision = models.PositiveIntegerField()
+    seller = models.ForeignKey("compliance.LegalEntity", on_delete=models.PROTECT)
+    seller_snapshot = models.JSONField()
+    customer_snapshot = models.JSONField()
+    tax_evidence = models.ForeignKey(TaxEvidence, on_delete=models.PROTECT)
+    currency = models.CharField(max_length=3, validators=[currency_validator])
+    jewellery_total_minor = MinorUnitField()
+    payable_minor = MinorUnitField()
+    balance_snapshot = models.JSONField()
+    status = models.CharField(
+        max_length=16,
+        default="DRAFT",
+        choices=[(s, s.title()) for s in ("DRAFT", "SEALED", "CONFIRMED", "VOID")],
+    )
+    sealed_at = models.DateTimeField(null=True, blank=True, validators=[validate_observed_at])
+    confirmed_at = models.DateTimeField(null=True, blank=True, validators=[validate_observed_at])
+    mutable_fields = ("status", "sealed_at", "confirmed_at")
+    write_once_fields = mutable_fields[1:]
+    initial_status = "DRAFT"
+    transitions = {"DRAFT": ("SEALED", "VOID"), "SEALED": ("CONFIRMED", "VOID")}
+
+    class Meta(LifecycleModel.Meta):
+        constraints = [
+            models.UniqueConstraint(fields=["booking", "revision"], name="purchase_revision"),
+            models.CheckConstraint(condition=Q(revision__gt=0), name="purchase_revision_positive"),
+            models.CheckConstraint(
+                condition=Q(jewellery_total_minor__gt=0, payable_minor__gte=0),
+                name="purchase_positive_totals",
+            ),
+            models.CheckConstraint(
+                condition=Q(currency__regex=r"^[A-Z]{3}$"), name="purchase_currency"
+            ),
+            models.CheckConstraint(
+                condition=Q(status="CONFIRMED", confirmed_at__isnull=False)
+                | (~Q(status="CONFIRMED") & Q(confirmed_at__isnull=True)),
+                name="purchase_confirmed_time",
+            ),
+            models.CheckConstraint(
+                condition=~Q(status__in=["SEALED", "CONFIRMED"]) | Q(sealed_at__isnull=False),
+                name="purchase_sealed_time",
+            ),
+        ]
+
+
+class PurchaseBalanceEvidence(AppendOnlyModel):
+    """Attributable calculation basis before applying previously collected funds.
+
+    Adjustments need explicit reviewed evidence; no adjustment or credit is seeded.
+    The source application changes the outstanding balance, not jewellery value.
+    Refs: BUSINESS_RULES.md R-07, R-19, R-25, R-28, R-30; DECISIONS.md BD-01, CA-01, CA-02.
+    """
+
+    purchase = models.OneToOneField(
+        Purchase, on_delete=models.PROTECT, related_name="balance_evidence"
+    )
+    amount_due_before_application = MinorUnitField()
+    adjustment_minor = SignedMinorUnitField()
+    currency = models.CharField(max_length=3, validators=[currency_validator])
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    observed_at = models.DateTimeField(default=timezone.now, validators=[validate_observed_at])
+    reason = models.TextField()
+    evidence_reference = models.CharField(max_length=500)
+    calculation_snapshot = models.JSONField()
+    policy_snapshot = models.JSONField()
+
+    class Meta(AppendOnlyModel.Meta):
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(amount_due_before_application__gte=0), name="balance_basis_nonnegative"
+            ),
+            models.CheckConstraint(
+                condition=Q(currency__regex=r"^[A-Z]{3}$"), name="balance_evidence_currency"
+            ),
+        ]
+
+    def lock_related_records(self, database):
+        if self.purchase_id:
+            self.purchase = (
+                Purchase.objects.using(database).select_for_update().get(pk=self.purchase_id)
+            )
+
+    def clean(self):
+        super().clean()
+        _validate_balance_observation(self)
+        if self.purchase_id and (
+            self.purchase.status != "DRAFT"
+            or self.currency != self.purchase.currency
+            or self.amount_due_before_application
+            != self.purchase.jewellery_total_minor + self.adjustment_minor
+        ):
+            raise ValidationError("Balance evidence must explain the current draft purchase value.")
+
+
+class UpfrontApplication(AppendOnlyModel):
+    """Explicit use of a collected upfront allocation toward one purchase balance.
+
+    Locked source totals prevent the same funds funding two purchases. A voided
+    purchase does not restore credit implicitly; reversal/refund policy stays gated.
+    Refs: BUSINESS_RULES.md R-25, R-26, R-28, R-30; DECISIONS.md BD-01, CA-01.
+    """
+
+    balance_evidence = models.ForeignKey(
+        PurchaseBalanceEvidence, on_delete=models.PROTECT, related_name="upfront_applications"
+    )
+    source_allocation = models.ForeignKey(
+        "payments.PaymentAllocation", on_delete=models.PROTECT, related_name="purchase_applications"
+    )
+    amount_minor = MinorUnitField()
+    currency = models.CharField(max_length=3, validators=[currency_validator])
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    observed_at = models.DateTimeField(default=timezone.now, validators=[validate_observed_at])
+    reason = models.TextField()
+    evidence_reference = models.CharField(max_length=500)
+    policy_snapshot = models.JSONField()
+    idempotency_key = models.UUIDField(unique=True)
+
+    class Meta(AppendOnlyModel.Meta):
+        constraints = [*money_constraints("upfront_application")]
+
+    def lock_related_records(self, database):
+        from payments.models import PaymentAllocation
+
+        if self.source_allocation_id:
+            self.source_allocation = (
+                PaymentAllocation.objects.using(database)
+                .select_for_update(of=("self",))
+                .select_related("booking_charge", "gateway_transaction")
+                .get(pk=self.source_allocation_id)
+            )
+        if self.balance_evidence_id:
+            self.balance_evidence = (
+                PurchaseBalanceEvidence.objects.using(database)
+                .select_for_update()
+                .select_related("purchase")
+                .get(pk=self.balance_evidence_id)
+            )
+            list(
+                Purchase.objects.using(database)
+                .select_for_update()
+                .filter(pk=self.balance_evidence.purchase_id)
+            )
+
+    def clean(self):
+        super().clean()
+        _validate_balance_observation(self)
+        if not self.source_allocation_id or not self.balance_evidence_id:
+            return
+        source = self.source_allocation
+        basis = self.balance_evidence
+        purchase = basis.purchase
+        effective_attempt_id = source.gateway_transaction.attempt_id
+        if effective_attempt_id is None:
+            from payments.models import GatewayTransactionMatch
+
+            effective_attempt_id = (
+                GatewayTransactionMatch.objects.filter(
+                    gateway_transaction=source.gateway_transaction
+                )
+                .values_list("attempt_id", flat=True)
+                .first()
+            )
+        if (
+            purchase.status != "DRAFT"
+            or source.booking_charge_id is None
+            or source.purchase_obligation_id is not None
+            or source.gateway_transaction.transaction_kind != "CAPTURE"
+            or source.booking_charge.status != "COLLECTED"
+            or not source.booking_charge.contexts.filter(
+                status="PAID", attempts__id=effective_attempt_id
+            ).exists()
+            or source.booking_charge.booking_id != purchase.booking_id
+            or source.booking_charge.payee_legal_entity_id != purchase.seller_id
+            or self.currency != source.currency
+            or self.currency != basis.currency
+            or self.observed_at < source.allocated_at
+            or self.observed_at < basis.observed_at
+        ):
+            raise ValidationError(
+                "Upfront application requires collected funds for this draft sale."
+            )
+        applied_source = (
+            source.purchase_applications.aggregate(total=Sum("amount_minor"))["total"] or 0
+        )
+        applied_purchase = (
+            basis.upfront_applications.aggregate(total=Sum("amount_minor"))["total"] or 0
+        )
+        if (
+            applied_source + self.amount_minor > source.amount_minor
+            or applied_purchase + self.amount_minor > basis.amount_due_before_application
+        ):
+            raise ValidationError(
+                "Upfront application exceeds the available source or purchase balance."
+            )
+
+
+def _validate_balance_observation(record):
+    if (
+        not record.reason.strip()
+        or not record.evidence_reference.strip()
+        or not isinstance(record.policy_snapshot, dict)
+        or not record.policy_snapshot
+        or not record.actor_id
+        or not record.actor.is_active
+    ):
+        raise ValidationError("Balance records require attributable reviewed calculation evidence.")
+    if isinstance(record, PurchaseBalanceEvidence) and (
+        not isinstance(record.calculation_snapshot, dict) or not record.calculation_snapshot
+    ):
+        raise ValidationError("Balance records require explicit calculation components.")
+
+
+class PurchaseItem(AppendOnlyModel):
+    """Exact selected piece and historical description/price/tax inputs.
+
+    Refs: BUSINESS_RULES.md R-11, R-27.
+    """
+
+    purchase = models.ForeignKey(Purchase, on_delete=models.PROTECT, related_name="items")
+    reservation = models.ForeignKey("inventory.InventoryReservation", on_delete=models.PROTECT)
+    line_number = models.PositiveIntegerField()
+    amount_minor = MinorUnitField()
+    currency = models.CharField(max_length=3, validators=[currency_validator])
+    product_snapshot = models.JSONField()
+    price_snapshot = models.JSONField()
+
+    class Meta(AppendOnlyModel.Meta):
+        constraints = [
+            *money_constraints("purchase_item"),
+            models.UniqueConstraint(
+                fields=["purchase", "line_number"], name="purchase_line_number"
+            ),
+            models.UniqueConstraint(fields=["purchase", "reservation"], name="purchase_piece_once"),
+            models.CheckConstraint(condition=Q(line_number__gt=0), name="purchase_line_positive"),
+        ]
+
+
+class PurchaseObligation(LifecycleModel):
+    """Final balance obligation, independent of the upfront booking charge.
+
+    A fully source-funded zero balance still preserves financial/document identity;
+    it never authorizes a zero-value provider collection context or attempt.
+
+    Refs: BUSINESS_RULES.md R-23, R-25, R-26.
+    """
+
+    purchase = models.OneToOneField(Purchase, on_delete=models.PROTECT, related_name="obligation")
+    amount_minor = MinorUnitField()
+    currency = models.CharField(max_length=3, validators=[currency_validator])
+    quote_expires_at = models.DateTimeField()
+    status = models.CharField(
+        max_length=16,
+        default="QUOTED",
+        choices=[(s, s.title()) for s in ("QUOTED", "DUE", "COLLECTED", "VOID")],
+    )
+    accepted_at = models.DateTimeField(null=True, blank=True, validators=[validate_observed_at])
+    mutable_fields = ("status", "accepted_at")
+    write_once_fields = ("accepted_at",)
+    initial_status = "QUOTED"
+    transitions = {"QUOTED": ("DUE", "VOID"), "DUE": ("COLLECTED", "VOID")}
+
+    class Meta(LifecycleModel.Meta):
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(amount_minor__gte=0), name="purchase_obligation_nonnegative"
+            ),
+            models.CheckConstraint(
+                condition=Q(currency__regex=r"^[A-Z]{3}$"), name="purchase_obligation_currency"
+            ),
+            models.CheckConstraint(
+                condition=Q(accepted_at__isnull=True, status__in=["QUOTED", "VOID"])
+                | Q(
+                    accepted_at__isnull=False,
+                    accepted_at__lt=F("quote_expires_at"),
+                    status__in=["DUE", "COLLECTED", "VOID"],
+                ),
+                name="purchase_obligation_acceptance",
+            ),
+        ]
+
+
+class DocumentSeries(AppendOnlyModel):
+    """Reviewed numbering scope; no legal format/period is selected here.
+
+    Refs: BUSINESS_RULES.md R-27; DECISIONS.md CA-02.
+    """
+
+    issuer = models.ForeignKey("compliance.LegalEntity", on_delete=models.PROTECT)
+    code = models.CharField(max_length=128)
+    scope_snapshot = models.JSONField()
+    review_reference = models.CharField(max_length=500)
+
+    class Meta(AppendOnlyModel.Meta):
+        constraints = [
+            models.UniqueConstraint(fields=["issuer", "code"], name="document_series_identity")
+        ]
+
+
+class FinancialDocument(LifecycleModel):
+    """Draft then sealed header/lines for reviewed dispatch, upfront, sale or correction records.
+
+    An issued document does not prove payment. Tax treatment is retained separately.
+    Refs: BUSINESS_RULES.md R-27, R-28, R-29, R-31; DECISIONS.md CA-01, CA-02, LR-03.
+    """
+
+    booking = models.ForeignKey("trials.TrialBooking", on_delete=models.PROTECT)
+    booking_charge = models.ForeignKey(
+        "payments.BookingCharge", null=True, blank=True, on_delete=models.PROTECT
+    )
+    purchase_obligation = models.ForeignKey(
+        PurchaseObligation, null=True, blank=True, on_delete=models.PROTECT
+    )
+    corrects = models.ForeignKey("self", null=True, blank=True, on_delete=models.PROTECT)
+    kind = models.CharField(
+        max_length=24,
+        choices=[
+            (s, s.replace("_", " ").title())
+            for s in ("DISPATCH", "UPFRONT_RECORD", "TAX_INVOICE", "ADJUSTMENT")
+        ],
+    )
+    series = models.ForeignKey(DocumentSeries, on_delete=models.PROTECT)
+    number = models.PositiveBigIntegerField(null=True, blank=True)
+    issuer_snapshot = models.JSONField()
+    recipient_snapshot = models.JSONField()
+    tax_evidence = models.ForeignKey(TaxEvidence, on_delete=models.PROTECT)
+    amount_minor = models.PositiveBigIntegerField()
+    currency = models.CharField(max_length=3, validators=[currency_validator])
+    status = models.CharField(
+        max_length=16, default="DRAFT", choices=[("DRAFT", "Draft"), ("ISSUED", "Issued")]
+    )
+    issued_at = models.DateTimeField(null=True, blank=True, validators=[validate_observed_at])
+    review_reference = models.CharField(max_length=500)
+    mutable_fields = ("status", "number", "issued_at")
+    write_once_fields = ("number", "issued_at")
+    initial_status = "DRAFT"
+    transitions = {"DRAFT": ("ISSUED",)}
+
+    class Meta(LifecycleModel.Meta):
+        constraints = [
+            models.UniqueConstraint(
+                fields=["series", "number"],
+                condition=Q(number__isnull=False),
+                name="issued_document_number",
+            ),
+            models.CheckConstraint(
+                condition=Q(status="DRAFT", number__isnull=True, issued_at__isnull=True)
+                | Q(status="ISSUED", number__gt=0, issued_at__isnull=False),
+                name="document_issue_evidence",
+            ),
+            models.CheckConstraint(
+                condition=Q(
+                    booking_charge__isnull=True, purchase_obligation__isnull=True, kind="DISPATCH"
+                )
+                | Q(
+                    booking_charge__isnull=False,
+                    purchase_obligation__isnull=True,
+                    kind__in=["UPFRONT_RECORD", "ADJUSTMENT"],
+                )
+                | Q(
+                    booking_charge__isnull=True,
+                    purchase_obligation__isnull=False,
+                    kind__in=["TAX_INVOICE", "ADJUSTMENT"],
+                ),
+                name="document_obligation_kind",
+            ),
+        ]
+
+
+class FinancialDocumentLine(AppendOnlyModel):
+    document = models.ForeignKey(FinancialDocument, on_delete=models.PROTECT, related_name="lines")
+    line_number = models.PositiveIntegerField()
+    amount_minor = models.PositiveBigIntegerField()
+    snapshot = models.JSONField()
+    reservation = models.ForeignKey(
+        "inventory.InventoryReservation", null=True, blank=True, on_delete=models.PROTECT
+    )
+    purchase_item = models.ForeignKey(PurchaseItem, null=True, blank=True, on_delete=models.PROTECT)
+
+    class Meta(AppendOnlyModel.Meta):
+        constraints = [
+            models.UniqueConstraint(
+                fields=["document", "reservation"],
+                condition=Q(reservation__isnull=False),
+                name="dispatch_document_piece",
+            ),
+            models.UniqueConstraint(
+                fields=["document", "purchase_item"],
+                condition=Q(purchase_item__isnull=False),
+                name="invoice_document_piece",
+            ),
+            models.UniqueConstraint(
+                fields=["document", "line_number"], name="document_line_number"
+            ),
+            models.CheckConstraint(condition=Q(line_number__gt=0), name="document_line_positive"),
+        ]
+```
 
 <a id="app-analytics"></a>
 
@@ -4463,6 +5956,9 @@ class ValidatedReferenceModel(TimeStampedModel):
     def save(self, *args, **kwargs):
         database = kwargs.get("using") or router.db_for_write(type(self), instance=self)
         with transaction.atomic(using=database):
+            from common.serialization import lock_integrity_writes
+
+            lock_integrity_writes(database)
             if not self._state.adding:
                 previous = type(self).objects.using(database).select_for_update().get(pk=self.pk)
                 self.validate_existing_identity(previous)
@@ -4559,6 +6055,9 @@ class AppendOnlyModel(models.Model):
             raise ValidationError("Recorded evidence is append-only.")
         database = kwargs.get("using") or router.db_for_write(type(self), instance=self)
         with transaction.atomic(using=database):
+            from common.serialization import lock_integrity_writes
+
+            lock_integrity_writes(database)
             self.lock_related_records(database)
             self.full_clean()
             kwargs["using"] = database
@@ -4799,6 +6298,18 @@ class MinorUnitField(models.PositiveBigIntegerField):
     def get_prep_value(self, value):
         # Bulk/queryset writes also pass here, even when full_clean is bypassed.
         return super().get_prep_value(self.to_python(value))
+
+
+class SignedMinorUnitField(models.BigIntegerField):
+    """Exact signed adjustment component; policy determines which adjustments apply."""
+
+    def to_python(self, value):
+        if value is not None and type(value) is not int:
+            raise ValidationError("Supply an integer amount in the currency's minor unit.")
+        return super().to_python(value)
+
+    def get_prep_value(self, value):
+        return super().get_prep_value(self.to_python(value))
 ```
 
 <a id="billing-value-object"></a>
@@ -5004,6 +6515,10 @@ Generated many-to-many join tables connect StaffUser to auth.Group/auth.Permissi
 
 Checkout extension D-27: [trials/0004_checkout_integrity.py](../arkatara_backend/trials/migrations/0004_checkout_integrity.py) migrates legacy credential digests and installs identity, lifecycle, cross-record, exclusive-reservation and monetary-allocation guards. It supersedes the earlier draft-only booking/grant triggers, retaining old migration history. See the checkout review for migration dependencies and refused evidence-losing downgrade.
 
+Review correction 2026-10-07: [review integrity guards](../arkatara_backend/trials/migrations/0005_review_integrity.py) and [lifecycle/financial guards](../arkatara_backend/trials/migrations/0006_lifecycle_financial_integrity.py) extend the retained checkpoint. [Finding validation and re-review handoff](reviews/TASK4_FINDING_FIXES_2026-10-07.md) records model scope, checks, serialization/recovery implications and unresolved policy/live gates.
+
+Re-review correction 2026-10-10: [attributed visit guards](../arkatara_backend/trials/migrations/0008_visit_corrections.py) and [source-bounded balance/scope guards](../arkatara_backend/trials/migrations/0010_purchase_balance_integrity.py) with [atomic source-funded confirmation](../arkatara_backend/trials/migrations/0011_atomic_source_funded_confirmation.py) add predispatch supersession/closure, preserved outcome corrections, explicit upfront applications and zero balance/document linkage without new collection. [Independent report and current handoff](reviews/TASK4_REREVIEW_CORRECTIONS_2026-10-10.md) records actual checks and open gates. Frozen SQL is hand-maintained; the repository-owned effective-function inspector reads forward literals only.
+
 ## Snapshot Maintenance
 
-Regenerate with `python scripts/export_model_reference.py --date 2026-10-04`; use `--check` to detect drift. The exporter reads metadata/source without querying the database and retains earlier annotations where still applicable. Actual code and canonical decisions take precedence.
+Regenerate with `python scripts/export_model_reference.py --date 2026-10-10`; use `--check` to detect drift. The exporter reads metadata/source without querying the database and retains earlier annotations where still applicable. Actual code and canonical decisions take precedence.

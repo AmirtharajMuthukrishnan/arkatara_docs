@@ -4,6 +4,18 @@
 
 ARKA TARA is a Bengaluru-first jewellery Try-at-Home business: "Order many. Try them at home. Buy any."
 
+Latest product correction: [D-33](docs/DECISIONS.md#d-33--immediate-trial-orders-and-configurable-weighted-upfront-pricing) selects immediate trial orders only, with no future slots or rescheduling; it supersedes D-32's reschedule requirement. Upfront pricing uses per-piece bases and extensible weighted metrics with versioned changes. Exact formula, amounts, base scope and display/accepted-quote flow remain open. Preserve payment-start stock holds, capture reconciliation and accepted quote history; cart edits never reserve inventory.
+
+The owner approved the first marketplace decision batch on 2026-10-18: [D-29](docs/DECISIONS.md#d-29--marketplace-sellers-platform-funded-purchase-benefit-and-combined-visits) governs vendor seller/invoice identity, a platform-received upfront charge with platform-funded purchase benefit, and mixed-vendor combined visits. Read that checkpoint before interpreting older single-seller/application assumptions. Wider marketplace/identity/OTP reconciliation and professional/provider gates remain explicit; this approval is not implementation or permission to discard history.
+
+The owner's D-29 follow-up confirms that Arka Tara never owns jewellery, the proposed Arkatara Private Limited has not begun incorporation, and no earlier platform has operated. The father's existing Abimannan Jewellers is a prospective vendor. Preserve vendor title separately from hub custody; do not invent an active legal entity, ownership transfer or permission to delete development databases/Git/migration history.
+
+[D-30](docs/DECISIONS.md#d-30--vendor-commission-and-selected-upfront-refund-outcomes) records the next approved commercial choices: percentage commission/base (no rate), selected cancellation/failure refunds and a purchase-capped benefit with refund of unused upfront money. Post-dispatch cancellation/no-show retention remains conditional on reviewed terms, not automatic forfeiture. Read its remaining gates before changing financial guards; no code or live readiness follows from documentation approval.
+
+[D-31](docs/DECISIONS.md#d-31--booking-time-item-price-commitment-and-promotion-combinations) selects confirmed-booking item-price commitment for both fixed and rate-based products, best eligible single vendor offer per item, and one eligible Arka-funded coupon alongside the vendor offer/upfront benefit within approved limits. Do not retain visit-time Gold repricing as a default. Vendor acceptance, quote validity/exceptions and precise calculation/allocation remain gates; customers still choose what to buy after the trial.
+
+[D-32](docs/DECISIONS.md#d-32--original-visit-price-protection-customer-rescheduling-and-delegated-publication) records price protection and staff publication under documented vendor-approved rules/sources/delegation. Its customer-reschedule flow is superseded by D-33's immediate-order-only direction. Distinguish platform/vendor delay remedies; do not assume a grace window, extra charge, automatic stock transfer or existing vendor authorization.
+
 Tasks 1–3 are complete for their authorized scope; recorded CI/review and live gates remain explicit. Task 4 is in progress and was re-scoped on 2026-10-02 to cross-app model completion under D-26: models, integrity guards, migrations and model/database tests, not workflows or UI. Original storefront 4.1–4.7 now execute in Task 5, with IDs, source and evidence preserved. Keep ten tasks and all original IDs. D-20 search requirements and unresolved business/CA/legal gates remain binding. See docs/TASKS.md for the completion matrix and actual evidence; documentation updates do not implement the models.
 
 Read [BUSINESS_CONTEXT](docs/BUSINESS_CONTEXT.md), [BUSINESS_RULES](docs/BUSINESS_RULES.md), [ARCHITECTURE](docs/ARCHITECTURE.md), [DATA_MODEL](docs/DATA_MODEL.md) and [DECISIONS](docs/DECISIONS.md) before proposing or implementing a task. Then consult [STATE_MACHINES](docs/STATE_MACHINES.md), [COMPLIANCE_AND_FINANCE](docs/COMPLIANCE_AND_FINANCE.md), [INTEGRATIONS](docs/INTEGRATIONS.md) and [TASKS](docs/TASKS.md) as relevant.
@@ -62,6 +74,12 @@ The owner approved selective code-to-business references on 2026-09-25. Apply th
 - Keep comments close to the class/function/guard that owns the constraint. Avoid repeated annotations on every line, import, straightforward accessor or test. Keep task-to-file/symbol mapping in [TASKS.md](docs/TASKS.md#implementation-reference-map), rather than scattering task-number headers through source code.
 - When changing a rule, moving its implementation or changing its scope, update affected comments and the central map in the same change. Keep stable IDs and preserve superseded decision history. Do not rewrite applied migrations merely to add references; map them in TASKS.md instead.
 - References belong in developer comments/documentation, not customer-facing copy, validation messages, API payloads or business defaults. Check reference accuracy and existing style checks during review; a separate test suite for comment text is unnecessary.
+
+## Implementation and independent review
+
+Follow the owner's [D-28 workflow](docs/DECISIONS.md#d-28--codex-implementation-and-independent-claude-review): Codex implements; Claude Code separately performs independent, primarily read-only review. Canonical requirements remain authoritative. Validate each substantive finding against evidence and approved invariants before coding; never rewrite requirements to silence a finding or dismiss demonstrated defects because existing checks pass.
+
+Use the finding-validation record and re-review handoff defined in D-28. Correct root causes with targeted changes and appropriate regression tests, run relevant checks and preserve unresolved decision gates. Record actual independent review evidence before claiming signoff. Review feedback does not expand D-26's models-only Task 4 or bypass D-21's UI gate. Be conservative with complexity and aggressive with integrity.
 
 ## Engineering standards once implementation is authorized
 

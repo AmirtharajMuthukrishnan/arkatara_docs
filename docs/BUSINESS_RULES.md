@@ -1,9 +1,17 @@
 # Business rules
 
 Status: Approved business invariants and explicit roadmap requirements; settings and unresolved policies remain open\
-Updated: 2026-10-04
+Updated: 2026-10-18
 
 This is the canonical rule reference. Read [DECISIONS.md](DECISIONS.md) before interpreting any example as policy.
+
+The approved [D-29 marketplace checkpoint](DECISIONS.md#d-29--marketplace-sellers-platform-funded-purchase-benefit-and-combined-visits) adds vendor seller/invoice identity and platform-funded purchase benefit responsibilities. Older identity/OTP rules still require explicit reconciliation with the owner's wider marketplace direction; the three marketplace answers do not resolve those flows or professional/provider gates.
+
+[D-30](DECISIONS.md#d-30--vendor-commission-and-selected-upfront-refund-outcomes) additionally selects the percentage commission/base and specified cancellation/small-purchase outcomes. No commission rate, automatic forfeiture, tax classification or after-sale policy is implied. Read the later checkpoint when an earlier rule/register still describes the full policy as unresolved.
+
+[D-31](DECISIONS.md#d-31--booking-time-item-price-commitment-and-promotion-combinations) selects booking-time item-price commitment for both modes and the permitted vendor-offer/platform-coupon combination. Preserve item commitments without requiring purchase of every trial piece. Detailed quote/exception, promotion and calculation policies remain open.
+
+[D-32](DECISIONS.md#d-32--original-visit-price-protection-customer-rescheduling-and-delegated-publication) selects price protection and controlled staff publication under vendor delegation; its customer-reschedule flow is superseded by [D-33](DECISIONS.md#d-33--immediate-trial-orders-and-configurable-weighted-upfront-pricing). Immediate trial orders have no future appointment slots or rescheduling. D-33 also selects extensible weighted upfront inputs with per-piece bases, while exact formula/amounts and display/acceptance flow remain open.
 
 ## Rule classifications
 
@@ -18,7 +26,7 @@ The seven-day cart duration, two-box pilot limit, three/five-piece plans and INR
 | ID | Rule |
 | --- | --- |
 | R-01 | One TrialBooking may contain multiple TrialBoxes; each TrialBox belongs to exactly one category. A Ring box cannot contain Chains. |
-| R-02 | One TrialBooking normally represents one customer home visit, with all boxes fulfilled together from the selected city's inventory for the same customer and address. Multiple boxes never imply independent customer checkouts. |
+| R-02 | One TrialBooking normally represents one immediate customer home-trial order/visit under D-33, with no future slots or rescheduling. All boxes are fulfilled together from the selected city's inventory for the same customer/address. Under D-29 it may contain pieces from multiple vendors, with seller-specific sale/invoice/settlement evidence. Neither boxes nor vendor groups force independent checkouts or a one-vendor-per-box rule. Multi-hub sourcing remains BD-08. |
 | R-03 | Browsing, Trial Cart, booking, reservation, dispatch, trial, selection, purchase, payment, invoice and inventory return remain distinct business concepts. A booking is not automatically a sale. |
 | R-04 | Guest browsing/checkout has no required account or registration wall and remains available after optional customer accounts launch. Booking collects name, mobile, address and PIN code, with booking phone verification under R-36. Account-free does not mean anonymous to the business. |
 | R-05 | Trial Cart selections persist locally through refresh, category/navigation changes and browser restart for a configured period. The roadmap selects localStorage; no customer account is required for this persistence. |
@@ -29,11 +37,11 @@ The seven-day cart duration, two-box pilot limit, three/five-piece plans and INR
 
 | ID | Rule |
 | --- | --- |
-| R-08 | Inventory belongs to hubs within markets/cities. Bengaluru and Hyderabad stock are separate pools; no intercity fulfilment is assumed. |
+| R-08 | Operational inventory is held at hubs within markets/cities; hub custody does not establish legal ownership. Arka Tara never owns jewellery under D-29; actual vendor/title evidence is required. Bengaluru and Hyderabad stock are separate pools; no intercity fulfilment is assumed. |
 | R-09 | Bookability must reflect selected-market/hub inventory and serviceability. Coming-soon or unavailable offerings must not produce valid bookings merely because the client displays them. |
 | R-10 | City/Market, Hub, ServiceArea, Material, Purity and Category are foundational concepts. Serviceable PIN codes and eligibility are data, not hard-coded city checks. |
 | R-11 | Material and purity are separate. Product design, ProductVariant and unique physical InventoryUnit are separate responsibilities. A catalogue row is not the physical piece. |
-| R-12 | Catalogue and pricing structure must support FIXED and WEIGHT_BASED pricing. Silver using FIXED initially is a possibility; actual price formulas and price commitment timing remain open. |
+| R-12 | Catalogue and pricing structure must support FIXED and WEIGHT_BASED pricing. Silver using FIXED initially is a possibility, not a material-wide mode constraint. D-31 locks both modes' quoted item prices at confirmed order acceptance with vendor agreement, protected for the accepted immediate trial under D-32/D-33. No future rescheduling, default visit-time Gold repricing or unilateral platform/vendor-delay repricing. Actual formula/source, preconfirmation validity and remaining exceptions remain gated. |
 | R-13 | Gold and Hyderabad activation alone must not require a core schema redesign, backend rewrite or duplicate frontend. Additional business requirements may still need explicitly approved work. |
 | R-14 | Physical stock cannot be incompatibly committed or sold twice. Reservation must handle concurrent booking attempts transactionally. |
 | R-15 | InventoryMovement history is append-only and must reconstruct physical movement/custody. SKU identifiers must not be parsed to infer business rules. |
@@ -56,7 +64,7 @@ The seven-day cart duration, two-box pilot limit, three/five-piece plans and INR
 | --- | --- |
 | R-23 | Agent QR and customer payment URL for the same final payable amount refer to the same PaymentAttempt/transaction context. Different presentation channels must not create independent payable charges. Retry and changed-selection rules remain open. |
 | R-24 | Backend gateway verification and authenticated webhook processing determine payment state. Screenshots, client callbacks and agent assertions alone cannot mark payment successful. Processing must be idempotent. |
-| R-25 | Upfront collection before booking confirmation is required for the launch flow under D-25; its amount, basis, classification and application/refund/retention remain open. A Trial Deposit is separate from jewellery price: applying previously collected funds changes the amount outstanding, not historical selling value. |
+| R-25 | Upfront collection before booking confirmation is required. D-29 selects Arka Tara as recipient and economic funder of the promised purchase benefit, preserving vendor agreed sale consideration; commission and net payout remain separate. D-30 selects specified cancellation/failure refunds, conditional reviewed retention and a purchase-capped benefit/refund of unused upfront money. Amount/formula, detailed allocation/exceptions and accounting/tax classification remain gated. The earlier genuine-deposit application principle changes outstanding balance rather than historical selling value; it does not classify a platform-funded cross-entity benefit as vendor advance funds or authorize arbitrary invoice discounts. |
 | R-26 | Business funds use business accounts. Payments, refunds, gateway transactions, gateway settlements and bank settlements must be traceable and reconcilable. No sensitive card data is stored. |
 | R-27 | Issued historical invoices are immutable and numbers controlled. Sale values, applicable taxes and legal-entity details must be snapshotted. Never recalculate old financial facts from current catalogue/tax/entity configuration. |
 | R-28 | Subsequent policy/configuration changes do not rewrite earlier commitments. Corrections/refunds must preserve original evidence; exact documents/tax treatment require CA REVIEW. |
@@ -103,9 +111,9 @@ The authoritative questions and status are in [DECISIONS.md](DECISIONS.md). This
 - Upfront collection amount/basis/classification and outcomes: BD-01 partially resolved by D-25; accounting/tax remains CA-01.
 - Booking commitment, reservations, expiry and late payments: BD-02 partially resolved by D-25/D-27; verified upfront collection and payment-start holds are required; timeout and exception policies remain open.
 - Plan quantities, variants, repeated-category boxes, mixed metals and substitutions: BD-03.
-- Price commitment and Gold pricing: BD-04.
+- D-31/D-32/D-33 select confirmed-order price commitment for both modes and protection for the accepted immediate trial, with no future slots/rescheduling. Remaining preconfirmation validity/exceptions, formula/source and Gold pricing details: BD-04. Immediate fulfilment/failure handling remains BD-07.
 - Pending payment, retries, changed selection and physical handover: BD-05; pilot methods: BD-06.
-- Scheduling, failed visits and exceptions: BD-07; same-city hub sourcing: BD-08.
+- Immediate-order readiness, failed visits and exceptions: BD-07; D-33 excludes future slots/rescheduling. Same-city hub sourcing: BD-08.
 - Physical identification, damage, loss and QC: BD-09.
 - After-sale returns/exchanges/refunds: BD-10, LR-01, CA-02.
 - Business entity and stock ownership: BD-11, LR-02, CA-03.

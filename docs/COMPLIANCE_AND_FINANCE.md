@@ -1,13 +1,17 @@
 # Compliance and finance
 
 Status: Software requirements and proposed evidence design for owner review; no compliance certification\
-Updated: 2026-10-04
+Updated: 2026-10-18
 
 This document defines what the software must preserve and support. It does not decide the business's tax position or certify legal compliance. Open questions retain the BUSINESS DECISION, CA REVIEW and LEGAL REVIEW labels in [DECISIONS.md](DECISIONS.md).
 
 ## Ownership and readiness
 
+Commercial approval, 2026-10-18: [D-29](DECISIONS.md#d-29--marketplace-sellers-platform-funded-purchase-benefit-and-combined-visits) selects vendors as jewellery sellers/invoice issuers, Arka Tara as upfront recipient and purchase-benefit funder, and seller-specific evidence beneath combined visits. Vendor agreed sale consideration is preserved; legitimate separately agreed deductions may affect net payout. This does not classify the upfront amount or benefit, establish entity/title facts, approve fund pooling, or select a commission/payout policy. CA-01/CA-02/CA-03 and LR-01 through LR-04 remain open for their applicable scope. The earlier deposit illustration below demonstrates a genuine advance application only; it is not the accounting specification for the new cross-entity platform-funded benefit.
+
 Before Task 8 live collection, establish the final operating/selling identity, business current account, applicable GST registration, CA-confirmed accounting policy and Trial Deposit treatment, Razorpay business account/KYC and settlement bank account. These are roadmap prerequisites, not claims that registration already exists or is always required in a particular form.
+
+D-29 follow-up, 2026-10-18: Arkatara Private Limited is the owner's intended platform entity, with incorporation not yet started. Arka Tara never owns jewellery. Abimannan Jewellers is the father's existing business and a prospective vendor/seller, not a completed onboarding or proven title record. Confirm its legal form, invoice particulars, ownership and custody agreements before using them operationally. No pre-existing platform history is reported; the vendor's independent books remain its own history. Do not invent company activation, asset transfer, procurement cost or a registered seller name from these planning statements.
 
 | Matter | Classification and owner |
 | --- | --- |
@@ -22,6 +26,12 @@ Before Task 8 live collection, establish the final operating/selling identity, b
 | Privacy, policies, grievance information, consent and retention | LEGAL REVIEW LR-04 |
 
 Record reviewed outcomes and evidence before dependent production behaviour is enabled. Independent business modelling can proceed without pretending these answers are known.
+
+## Approved commercial commission and refund boundaries
+
+[D-30](DECISIONS.md#d-30--vendor-commission-and-selected-upfront-refund-outcomes) records marketplace answers 7-9. Commission is a percentage of the vendor's agreed sale value excluding applicable GST, before the platform-funded benefit; no rate or recognition/reversal/payout event is approved. Before-dispatch customer cancellation and platform/vendor failure receive an upfront refund. Post-dispatch cancellation/no-show retention is conditional on reviewed disclosed terms; a dispatch record cannot itself authorize forfeiture. Ordinary completed no-purchase retention remains the commercial direction.
+
+For a qualifying purchase below the upfront amount, cap the applied benefit at the purchase amount and refund unused upfront money. Preserve seller consideration and keep original collection, benefit, any retention/refund and separately agreed deductions explainable. Multi-seller allocation, promotion ordering, actual tax bases, partial failures and later returns still require decisions/review. Refund permission, verified refund completion and physical return/QC are separate facts. These are commercial entitlements, not legal classification or proof of operational refund capability.
 
 ## Required distinctions
 
@@ -57,7 +67,11 @@ At the relevant commitment/document event, preserve enough facts to explain:
 - Pricing mode, approved calculation inputs/components, agreed values, permitted adjustments, tax classification/rates/components, totals and currency.
 - Applicable policy/version, event timing, authoritative source references and the relationship to prior funds.
 
-For WEIGHT_BASED pricing, preserve the actual inputs and result used; do not silently choose a formula, commodity rate source, making charge, wastage or price-lock time. Those remain BD-04/BD-12 and CA-02.
+For WEIGHT_BASED pricing, preserve the actual inputs and result used. D-31 selects confirmed-booking item-price commitment for both modes with vendor acceptance of the exposure; do not silently choose a formula, commodity rate source, making charge, wastage, validity period or exception. Those details remain BD-04/BD-12 and CA-02. Preserve the committed seller price separately from one eligible seller offer and platform-funded coupon/upfront evidence. Calculation order, allocation, tax and return treatment still require review; platform funding must not silently reduce vendor agreed consideration or rewrite historical invoices.
+
+[D-32](DECISIONS.md#d-32--original-visit-price-protection-customer-rescheduling-and-delegated-publication) retains price protection and vendor-delegated staff publication. [D-33](DECISIONS.md#d-33--immediate-trial-orders-and-configurable-weighted-upfront-pricing) supersedes future appointments/rescheduling: the commitment concerns an accepted immediate trial. Platform/vendor delay remedies remain separate. Actual delegation, preconfirmation quote validity, formula/source, statutory-change and document/financial consequences still need review.
+
+D-33's per-piece upfront bases and adjustable weighted metrics require versioned source/input/calculation evidence. Neither weights summing to a particular percentage, additive versus multiplicative arithmetic, numerical bases/limits nor a tax classification is selected. Cart estimates may change; the exact amount accepted for payment and historical collection facts must not change retroactively when policy weights change. Display timing and exact quote validity still need the owner's decision; CA/legal review remains separate from the configurable business calculation.
 
 Entity or catalogue edits after issue must not alter prior financial records. A future company cannot simply become the issuer of documents previously issued by another entity.
 

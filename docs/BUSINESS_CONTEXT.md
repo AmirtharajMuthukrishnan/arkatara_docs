@@ -1,13 +1,27 @@
 # Business context
 
 Status: APPROVED BUSINESS CONTEXT; D-23–D-26 update identity, booking and model-first sequencing; implementation and policy gates remain explicit\
-Updated: 2026-10-04
+Updated: 2026-10-18
 
 This is the canonical business narrative for both repositories. Binding rules live in [BUSINESS_RULES.md](BUSINESS_RULES.md); finalized decisions, unresolved questions and source reconciliation live in [DECISIONS.md](DECISIONS.md). Technical proposals do not silently resolve commercial, accounting or legal questions.
 
 ## Nature of the business
 
-ARKA TARA is a jewellery commerce business beginning in Bengaluru, India. It provides an attended Try-at-Home experience with internal delivery/sales agents.
+ARKA TARA is a jewellery marketplace beginning in Bengaluru, India. It provides an attended Try-at-Home experience, with the first marketplace commercial decisions approved under [D-29](DECISIONS.md#d-29--marketplace-sellers-platform-funded-purchase-benefit-and-combined-visits).
+
+Vendors remain the jewellery sellers/invoice issuers; Arka Tara facilitates the visit and may generate documents in the vendor's name under appropriate authorization. Arka Tara receives the upfront trial amount and funds the promised purchase benefit while preserving the vendor's agreed sale consideration. One combined visit may contain jewellery from several vendors, with separate seller-specific sale, invoice and settlement evidence. Arka Tara never owns jewellery; hub custody does not establish platform ownership. The father's existing Abimannan Jewellers is the prospective first vendor; its legal invoice particulars and piece-title evidence remain onboarding dependencies.
+
+The owner plans to create Arkatara Private Limited, but incorporation has not started. No earlier Arka Tara entity, marketplace or platform has operated; this is the first implementation of the idea. The father's business exists independently. These owner-reported facts do not establish a registered company/name, completed vendor onboarding or permission to erase development/migration history.
+
+This 2026-10-18 checkpoint selects commercial responsibility, not the charge's tax classification, benefit-allocation formula, commission, payout amount or an approved provider arrangement. Remaining account/contact/OTP and exception flows still need explicit reconciliation before their dependent refactor; the older journey and implementation checkpoints below do not constitute the completed marketplace flow.
+
+The subsequent [D-30 commercial checkpoint](DECISIONS.md#d-30--vendor-commission-and-selected-upfront-refund-outcomes) selects percentage commission/base without a rate, specified cancellation/failure refunds and a purchase-capped benefit with refund of unused upfront money. These choices refine the earlier open questions; exact amounts, accounting treatment, detailed exceptions, after-sale outcomes and operational activation remain pending.
+
+[D-31](DECISIONS.md#d-31--booking-time-item-price-commitment-and-promotion-combinations) locks both fixed and rate-based jewellery item prices at confirmed booking, with vendors accepting that exposure. The customer still chooses pieces after trying them. Vendors authorize the best eligible single offer per item; one eligible Arka-funded coupon may combine with that offer and the upfront benefit within approved limits while preserving vendor consideration. Exact quote validity, exceptions, eligibility/allocation and accounting treatment remain pending; Gold is not activated by this direction.
+
+[D-32](DECISIONS.md#d-32--original-visit-price-protection-customer-rescheduling-and-delegated-publication) records committed-price protection and controlled staff publication under vendor delegation. Its customer-rescheduling flow was subsequently superseded by [D-33](DECISIONS.md#d-33--immediate-trial-orders-and-configurable-weighted-upfront-pricing): the product accepts immediate trial orders only, without future appointment slots or rescheduling. Platform/vendor-caused delay still requires honoring the commitment or the appropriate cancellation/refund remedy. Actual mandates, fulfilment limits and financial/professional treatment remain to be established.
+
+The upfront calculation combines per-piece bases with weighted cart/behaviour/demand metrics. New metrics and changing weights must be supported through attributable policy versions, preserving the evidence behind each quote. Exact arithmetic, bases/coefficients, limits and whether to show a cart estimate or only a checkout quote remain open under D-33. Frequent optimization does not reprice an already accepted payment or reserve jewellery merely because it is in a cart.
 
 > Order many. Try them at home. Buy any.
 
@@ -48,7 +62,7 @@ Example: one Ring Trial Box and one Chain Trial Box belong to one booking, custo
 
 Multiple boxes do not imply multiple independent checkouts. They do not decide the number of deposits, purchases or payment attempts either. Box composition and those financial policies remain explicit decisions.
 
-"Normally one visit" is deliberate: the business has not approved split visits or retry/rescheduling rules. Whether stock can be combined from multiple hubs within one city also remains unresolved. There is no operating assumption of intercity fulfilment.
+Under D-33 this is an immediate-order home trial, not an appointment for a later date; there are no future slots or rescheduling options. The internal booking record still distinguishes intent, payment and acceptance. Exceptional failed/repeat or split visits remain unapproved. Whether stock can be combined from multiple hubs within one city remains unresolved, with no implicit intercity fulfilment.
 
 ## Normal operating journey
 

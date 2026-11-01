@@ -1,11 +1,13 @@
 # Planned integrations
 
 Status: TASK 3 PRIVATE MEDIA BOUNDARY IMPLEMENTED LOCALLY; external providers remain unconnected and subject to review\
-Updated: 2026-10-04; external planning references last checked: 2026-09-19 (not revalidated by this scope update)
+Updated: 2026-10-18; external planning references last checked: 2026-09-19 (not revalidated by this scope update)
 
 Use the [architecture](ARCHITECTURE.md), [finance requirements](COMPLIANCE_AND_FINANCE.md), [state machines](STATE_MACHINES.md) and [decision log](DECISIONS.md) together. Tasks 8 and 9 deliberately follow core business logic.
 
 ## Boundaries and sequencing
+
+[D-29](DECISIONS.md#d-29--marketplace-sellers-platform-funded-purchase-benefit-and-combined-visits) selects a combined multi-vendor journey and platform-funded purchase benefit. Provider-approved collection, recipient attribution, seller allocation, transfers/reversals and settlements remain BD-15/CA/legal dependencies. Neither one visit nor one customer checkout proves a single multi-seller payment is available. Preserve verified source evidence and do not implement cross-entity application by simply removing the current same-payee/seller guard.
 
 | Boundary | Responsibility | Must not own |
 | --- | --- | --- |

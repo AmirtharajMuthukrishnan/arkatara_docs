@@ -1,0 +1,462 @@
+"""Finance/compliance review probes, 2026-10-10. Scratchpad only; never part of the repo.
+
+Convention: each probe PASSES when the suspected finding is REPRODUCED against the current
+working tree. All amounts are fictional minor units (paise). Disposable database only.
+"""
+
+import uuid
+from datetime import datetime, timedelta
+from datetime import timezone as dt_timezone
+from types import SimpleNamespace
+
+import pytest
+from django.apps import apps
+from django.core.exceptions import ValidationError
+from django.db import DatabaseError, connection, transaction
+from django.utils import timezone
+
+from accounts.models import StaffUser
+from billing.models import (
+    DocumentSeries,
+    FinancialDocument,
+    FinancialDocumentLine,
+    Purchase,
+    PurchaseBalanceEvidence,
+    PurchaseItem,
+    PurchaseObligation,
+    TaxEvidence,
+    UpfrontApplication,
+)
+from compliance.models import AuditEvent, LegalEntity
+from inventory.models import InventoryUnit
+from payments.models import (
+    BookingCharge,
+    GatewayTransaction,
+    PaymentAllocation,
+    PaymentAttempt,
+    PaymentContext,
+)
+from tests.test_checkout_models import booking_graph, raw_insert, receipt, start_payment, stock
+from tests.test_checkout_models import setup as setup  # noqa: F401  (pytest fixture)
+from tests.test_lifecycle_financial_models import observe, trial_graph
+
+pytestmark = pytest.mark.django_db
+
+
+# --------------------------------------------------------------------------- helpers
+def build_purchase(setup, *, jewellery=500, adjustment=0, apply=0, seller=None, purchase_tax=None):
+    """Booking (deposit 100 collected, TEST env) -> dispatch -> trial -> sealed purchase -> DUE."""
+    graph = trial_graph(setup)
+    seller = seller or setup.entity
+    payable = jewellery + adjustment - apply
+    purchase = Purchase.objects.create(
+        booking=graph.booking,
+        revision=1,
+        seller=seller,
+        seller_snapshot={"probe": True},
+        customer_snapshot={"probe": True},
+        tax_evidence=purchase_tax or graph.tax,
+        currency="INR",
+        jewellery_total_minor=jewellery,
+        payable_minor=payable,
+        balance_snapshot={"probe": True},
+    )
+    item = PurchaseItem.objects.create(
+        purchase=purchase,
+        reservation=graph.hold,
+        line_number=1,
+        amount_minor=jewellery,
+        currency="INR",
+        product_snapshot={"probe": True},
+        price_snapshot={"probe": True},
+    )
+    basis = PurchaseBalanceEvidence.objects.create(
+        purchase=purchase,
+        amount_due_before_application=jewellery + adjustment,
+        adjustment_minor=adjustment,
+        currency="INR",
+        actor=graph.actor,
+        observed_at=timezone.now(),
+        reason="probe",
+        evidence_reference="probe",
+        calculation_snapshot={"probe": True},
+        policy_snapshot={"probe": True},
+    )
+    if apply:
+        UpfrontApplication.objects.create(
+            balance_evidence=basis,
+            source_allocation=graph.charge.allocations.get(),
+            amount_minor=apply,
+            currency="INR",
+            actor=graph.actor,
+            observed_at=timezone.now(),
+            reason="probe",
+            evidence_reference="probe",
+            policy_snapshot={"probe": True},
+            idempotency_key=uuid.uuid4(),
+        )
+    purchase.status = "SEALED"
+    purchase.sealed_at = timezone.now()
+    purchase.save()
+    obligation = PurchaseObligation.objects.create(
+        purchase=purchase,
+        amount_minor=payable,
+        currency="INR",
+        quote_expires_at=timezone.now() + timedelta(minutes=5),
+    )
+    obligation.status = "DUE"
+    obligation.accepted_at = timezone.now()
+    obligation.save()
+    context = PaymentContext.objects.create(
+        purchase_obligation=obligation,
+        version=1,
+        expires_at=timezone.now() + timedelta(minutes=3),
+        policy_snapshot={"probe": True},
+    )
+    attempt = PaymentAttempt.objects.create(
+        context=context,
+        request_id=uuid.uuid4(),
+        request_fingerprint="a" * 64,
+        provider="FICTIONAL",
+        provider_account="test-account",
+        environment="TEST",
+        amount_minor=payable,
+        currency="INR",
+    )
+    graph.final = SimpleNamespace(
+        purchase=purchase, item=item, obligation=obligation, context=context, attempt=attempt
+    )
+    return graph
+
+
+def pay(graph, *, allocated_at=None):
+    final = graph.final
+    amount = final.obligation.amount_minor
+    payment_id = f"final-{final.purchase.pk}"
+    final.attempt.status = "PENDING"
+    final.attempt.provider_order_id = str(uuid.uuid4())
+    final.attempt.save()
+    receipt(final, "AUTHORISATION", amount_minor=amount, provider_payment_id=payment_id)
+    final.attempt.status = "AUTHORIZED"
+    final.attempt.last_verified_at = timezone.now()
+    final.attempt.save()
+    final.context.status = "CAPTURING"
+    final.context.capture_started_at = timezone.now()
+    final.context.save()
+    final.attempt.status = "CAPTURE_PENDING"
+    final.attempt.capture_requested_at = timezone.now()
+    final.attempt.save()
+    captured = receipt(final, amount_minor=amount, provider_payment_id=payment_id)
+    allocation = PaymentAllocation.objects.create(
+        gateway_transaction=captured,
+        purchase_obligation=final.obligation,
+        amount_minor=amount,
+        currency="INR",
+        idempotency_key=uuid.uuid4(),
+        **({"allocated_at": allocated_at} if allocated_at else {}),
+    )
+    final.attempt.status = "SUCCEEDED"
+    final.attempt.last_verified_at = timezone.now()
+    final.attempt.succeeded_at = timezone.now()
+    final.attempt.save()
+    final.obligation.status = "COLLECTED"
+    final.obligation.save()
+    final.context.status = "PAID"
+    final.context.paid_at = timezone.now()
+    final.context.save()
+    final.purchase.status = "CONFIRMED"
+    final.purchase.confirmed_at = timezone.now()
+    final.purchase.save()
+    return captured, allocation
+
+
+def invoice(graph, *, amount, line_amount=None, number=2, issued_at=None, series=None,
+            tax=None, issuer_snapshot=None, recipient_snapshot=None, line_snapshot=None,
+            kind="TAX_INVOICE", corrects=None):
+    document = FinancialDocument.objects.create(
+        booking=graph.booking,
+        purchase_obligation=graph.final.obligation,
+        corrects=corrects,
+        kind=kind,
+        series=series or graph.series,
+        issuer_snapshot=issuer_snapshot or {"x": "y"},
+        recipient_snapshot=recipient_snapshot or {"x": "y"},
+        tax_evidence=tax or graph.tax,
+        amount_minor=amount,
+        currency="INR",
+        review_reference="probe-format",
+    )
+    FinancialDocumentLine.objects.create(
+        document=document,
+        line_number=1,
+        amount_minor=amount if line_amount is None else line_amount,
+        snapshot=line_snapshot or {"x": "y"},
+        purchase_item=graph.final.item,
+    )
+    document.status = "ISSUED"
+    document.number = number
+    document.issued_at = issued_at or timezone.now()
+    document.save()
+    return document
+
+
+def attempt_db(callable_):
+    """Return True when the database/ORM rejects the action, False when it is accepted."""
+    try:
+        with transaction.atomic():
+            callable_()
+    except (DatabaseError, ValidationError) as error:
+        print(f"\n    REJECTED -> {type(error).__name__}: {str(error).splitlines()[0][:160]}")
+        return True
+    print("\n    ACCEPTED")
+    return False
+
+
+# --------------------------------------------------------------------------- probes
+@pytest.mark.parametrize("adjustment", [-100, 100])
+def test_P01_adjustment_money_collected_but_never_invoiced(setup, adjustment):
+    """Signed adjustment changes the amount paid; tax invoice must still equal jewellery total."""
+    graph = build_purchase(setup, jewellery=500, adjustment=adjustment)
+    captured, _ = pay(graph)
+    assert captured.amount_minor == 500 + adjustment  # what the customer actually paid
+    # An invoice for the amount actually charged is refused ...
+    assert attempt_db(lambda: invoice(graph, amount=500 + adjustment, number=3))
+    # ... only the pre-adjustment jewellery value can be invoiced.
+    doc = invoice(graph, amount=500, number=4)
+    assert doc.status == "ISSUED" and doc.amount_minor != captured.amount_minor
+
+
+def test_P02_tax_exclusive_invoice_total_cannot_be_represented(setup):
+    graph = build_purchase(setup, jewellery=500)
+    pay(graph)
+    # 3% GST on top of a 500 jewellery value (illustrative only; no rate is asserted as law).
+    assert attempt_db(lambda: invoice(graph, amount=515, line_amount=515, number=3))
+    assert attempt_db(lambda: invoice(graph, amount=515, line_amount=500, number=4))
+    doc = invoice(graph, amount=500, number=5)
+    assert doc.amount_minor == graph.final.purchase.jewellery_total_minor
+
+
+def test_P03_invoice_issues_without_any_rule46_particulars(setup):
+    graph = build_purchase(setup, jewellery=500)
+    pay(graph)
+    junk_tax = TaxEvidence.objects.create(
+        status="REVIEWED",
+        treatment_snapshot={"anything": "at all"},
+        reviewed_by=graph.actor,
+        reviewed_at=timezone.now(),
+        review_reference="x",
+    )
+    doc = invoice(
+        graph,
+        amount=500,
+        tax=junk_tax,
+        issuer_snapshot={"no": "gstin"},
+        recipient_snapshot={"no": "state"},
+        line_snapshot={"no": "hsn"},
+    )
+    assert doc.status == "ISSUED"
+    # The paying receipt behind this confirmed sale and issued invoice is TEST-environment money.
+    assert graph.final.attempt.environment == "TEST"
+    assert graph.attempt.environment == "TEST"
+
+
+def test_P04_series_mixes_document_kinds_back_dates_and_exceeds_16_chars(setup):
+    graph = build_purchase(setup, jewellery=500)
+    pay(graph)
+    # The fixture already issued DISPATCH #1 (a nil-value challan) in this same series.
+    assert graph.document.kind == "DISPATCH" and graph.document.number == 1
+    assert graph.document.amount_minor == 0
+    long_series = DocumentSeries.objects.create(
+        issuer=setup.entity,
+        code="ARKATARA-BLR-TAX-INVOICE",
+        scope_snapshot={"probe": True},
+        review_reference="probe",
+    )
+    # Back-dated into the previous financial year, before the booking even existed.
+    prior_fy = datetime(2026, 3, 20, 12, 0, tzinfo=dt_timezone.utc)
+    assert graph.booking.created_at > prior_fy
+    doc = invoice(graph, amount=500, number=98765432109876, issued_at=prior_fy, series=long_series)
+    shown = f"{doc.series.code}/{doc.number}"
+    assert doc.status == "ISSUED" and len(shown) > 16
+    assert doc.issued_at < graph.final.purchase.confirmed_at
+    # Same series as the challan also accepts a tax invoice (kinds share one number space).
+    graph2_doc_ok = not attempt_db(lambda: invoice(graph, amount=500, number=7))
+    assert graph2_doc_ok
+
+
+def test_P05_two_tax_invoices_for_the_same_sale(setup):
+    graph = build_purchase(setup, jewellery=500)
+    pay(graph)
+    first = invoice(graph, amount=500, number=2)
+    second = invoice(graph, amount=500, number=3)
+    assert first.status == second.status == "ISSUED"
+    assert FinancialDocument.objects.filter(
+        kind="TAX_INVOICE", purchase_obligation=graph.final.obligation, status="ISSUED"
+    ).count() == 2
+
+
+def test_P06_credit_adjustments_unbounded_undirected_backdated_cross_booking(setup):
+    graph = build_purchase(setup, jewellery=500)
+    pay(graph)
+    original = invoice(graph, amount=500, number=2)
+    first = invoice(graph, amount=5000, number=3, kind="ADJUSTMENT", corrects=original,
+                    issued_at=original.issued_at - timedelta(days=30))
+    second = invoice(graph, amount=5000, number=4, kind="ADJUSTMENT", corrects=original)
+    assert first.status == second.status == "ISSUED"
+    assert first.amount_minor + second.amount_minor == 20 * original.amount_minor
+    assert first.issued_at < original.issued_at  # correction dated before what it corrects
+    # A correction line can point at another customer's booking stock.
+    other = booking_graph(setup)
+    start_payment(other, stock(setup))
+    stray = FinancialDocument.objects.create(
+        booking=graph.booking, purchase_obligation=graph.final.obligation, corrects=original,
+        kind="ADJUSTMENT", series=graph.series, issuer_snapshot={"x": 1},
+        recipient_snapshot={"x": 1}, tax_evidence=graph.tax, amount_minor=1, currency="INR",
+        review_reference="probe")
+    FinancialDocumentLine.objects.create(document=stray, line_number=1, amount_minor=1,
+                                         snapshot={"x": 1}, reservation=other.hold)
+    stray.status, stray.number, stray.issued_at = "ISSUED", 5, timezone.now()
+    stray.save()
+    assert other.hold.payment_context.booking_charge.booking_id != graph.booking.pk
+
+
+def test_P07_upfront_record_issued_for_money_never_received(setup):
+    graph = booking_graph(setup)  # charge QUOTED: nothing accepted, nothing captured
+    reviewer = StaffUser.objects.create_user(username="probe-reviewer", is_staff=True)
+    tax = TaxEvidence.objects.create(status="REVIEWED", treatment_snapshot={"x": 1},
+                                     reviewed_by=reviewer, reviewed_at=timezone.now(),
+                                     review_reference="probe")
+    series = DocumentSeries.objects.create(issuer=setup.entity, code="RV", review_reference="p",
+                                           scope_snapshot={"x": 1})
+    doc = FinancialDocument.objects.create(
+        booking=graph.booking, booking_charge=graph.charge, kind="UPFRONT_RECORD", series=series,
+        issuer_snapshot={"x": 1}, recipient_snapshot={"x": 1}, tax_evidence=tax,
+        amount_minor=graph.charge.amount_minor, currency="INR", review_reference="probe")
+    FinancialDocumentLine.objects.create(document=doc, line_number=1,
+                                         amount_minor=graph.charge.amount_minor, snapshot={"x": 1})
+    doc.status, doc.number, doc.issued_at = "ISSUED", 1, timezone.now()
+    doc.save()
+    graph.charge.refresh_from_db()
+    assert doc.status == "ISSUED" and graph.charge.status == "QUOTED"
+    assert not PaymentAllocation.objects.filter(booking_charge=graph.charge).exists()
+
+
+def test_P08_collected_upfront_funds_can_never_be_discharged(setup):
+    graph = trial_graph(setup)  # deposit 100 collected, booking confirmed
+    names = {model.__name__.lower() for model in apps.get_models()}
+    assert not {n for n in names if "refund" in n or "settlement" in n or "retention" in n}
+    # Charge is terminal at COLLECTED and the paid context is terminal: no void/refund/retain path.
+    assert attempt_db(lambda: (setattr(graph.charge, "status", "VOID"), graph.charge.save()))
+    graph.charge.refresh_from_db()
+    assert attempt_db(
+        lambda: connection.cursor().execute(
+            "UPDATE payments_bookingcharge SET status='VOID' WHERE id=%s", [graph.charge.pk]
+        )
+    )
+    # Gateway evidence cannot record a refund or chargeback at all.
+    assert attempt_db(
+        lambda: raw_insert(
+            GatewayTransaction, attempt=graph.attempt, provider="FICTIONAL",
+            provider_account="test-account", environment="TEST", provider_payment_id="rfnd",
+            transaction_kind="REFUND", amount_minor=100, currency="INR",
+            occurred_at=timezone.now(), verified_at=timezone.now(), verification_reference="x")
+    )
+    unapplied = graph.charge.allocations.get().amount_minor - sum(
+        a.amount_minor for a in UpfrontApplication.objects.filter(
+            source_allocation__booking_charge=graph.charge))
+    assert unapplied == 100  # remains an open liability with no possible closing record
+
+
+def test_P09_goods_handed_over_with_no_tax_invoice(setup):
+    graph = build_purchase(setup, jewellery=500)
+    pay(graph)
+    observe(graph, "SALE", purchase_item=graph.final.item)
+    unit = InventoryUnit.objects.get(pk=graph.hold.unit_id)
+    assert (unit.status, unit.custody) == ("SOLD", "CUSTOMER")
+    assert not FinancialDocument.objects.filter(booking=graph.booking, kind="TAX_INVOICE").exists()
+
+
+def test_P10_sale_priced_without_tax_configuration_then_invoiced_with_other_treatment(setup):
+    unconfigured = TaxEvidence.objects.create(status="UNCONFIGURED")
+    graph = build_purchase(setup, jewellery=500, purchase_tax=unconfigured)
+    pay(graph)
+    observe(graph, "SALE", purchase_item=graph.final.item)
+    doc = invoice(graph, amount=500)
+    assert graph.final.purchase.tax_evidence.status == "UNCONFIGURED"
+    assert doc.status == "ISSUED" and doc.tax_evidence_id != graph.final.purchase.tax_evidence_id
+
+
+def test_P11_deposit_payee_and_seller_differ_with_shared_merchant_account(setup):
+    other_entity = LegalEntity.objects.create(code="probe-b", registered_name="Entity B",
+                                              country_code="IN")
+    graph = build_purchase(setup, jewellery=500, seller=other_entity)
+    pay(graph)
+    b_series = DocumentSeries.objects.create(issuer=other_entity, code="B", review_reference="p",
+                                             scope_snapshot={"x": 1})
+    doc = invoice(graph, amount=500, series=b_series, number=1)
+    assert graph.charge.payee_legal_entity_id != graph.final.purchase.seller_id
+    assert graph.attempt.provider_account == graph.final.attempt.provider_account
+    assert doc.status == "ISSUED"
+
+
+def test_P12_legal_entity_registration_rewritten_without_audit(setup):
+    before = AuditEvent.objects.count()
+    LegalEntity.objects.filter(pk=setup.entity.pk).update(
+        tax_registration_number="29AAAAA0000A1Z5", registered_name="Renamed entity"
+    )
+    setup.entity.refresh_from_db()
+    assert setup.entity.tax_registration_number == "29AAAAA0000A1Z5"
+    assert AuditEvent.objects.count() == before
+
+
+def test_P13_high_value_sale_completes_without_pan_or_identity(setup):
+    graph = build_purchase(setup, jewellery=25_000_000)  # INR 2,50,000.00 (fictional)
+    pay(graph)
+    doc = invoice(graph, amount=25_000_000)
+    assert doc.status == "ISSUED" and graph.final.purchase.customer_snapshot == {"probe": True}
+
+
+def test_P14_payment_applied_before_it_was_captured(setup):
+    graph = build_purchase(setup, jewellery=500)
+    backdated = timezone.now() - timedelta(days=200)
+    captured, allocation = pay(graph, allocated_at=backdated)
+    assert allocation.allocated_at < captured.occurred_at - timedelta(days=150)
+
+
+def test_P15_unregistered_draft_entity_issues_tax_invoices(setup):
+    graph = build_purchase(setup, jewellery=500)
+    pay(graph)
+    doc = invoice(graph, amount=500)
+    setup.entity.refresh_from_db()
+    assert setup.entity.status == "DRAFT" and setup.entity.tax_registration_number == ""
+    assert doc.status == "ISSUED" and doc.series.issuer_id == setup.entity.pk
+
+
+def test_P16_personal_data_on_bookings_cannot_be_anonymised(setup):
+    graph = booking_graph(setup)
+    assert attempt_db(
+        lambda: connection.cursor().execute(
+            "UPDATE trials_trialbooking SET contact_name='[erased]', address='[erased]' WHERE id=%s",
+            [graph.booking.pk],
+        )
+    )
+    fields = {f.name for f in TrialBookingModel()._meta.fields}
+    assert not {"anonymised_at", "retention_until", "erased_at"} & fields
+
+
+def TrialBookingModel():
+    from trials.models import TrialBooking
+
+    return TrialBooking
+
+
+def test_P17_physical_unit_has_no_cost_weight_hallmark_or_owner(setup):
+    unit_fields = {f.name for f in InventoryUnit._meta.fields}
+    print("\n    InventoryUnit fields:", sorted(unit_fields))
+    assert not {n for n in unit_fields if any(k in n for k in ("cost", "weight", "huid", "hallmark",
+                                                                "owner", "legal_entity", "supplier"))}
+    hub_fields = {f.name for f in apps.get_model("markets", "Hub")._meta.fields}
+    entity_fields = {f.name for f in LegalEntity._meta.fields}
+    print("    Hub fields:", sorted(hub_fields))
+    print("    LegalEntity fields:", sorted(entity_fields))
+    assert not {n for n in hub_fields if any(k in n for k in ("state", "address", "gst", "entity"))}
